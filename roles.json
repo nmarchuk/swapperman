@@ -1,0 +1,111 @@
+{
+  "title": "Logjam's Camp",
+  "author": "Nicholas Marchuk",
+  "roles": [
+    {
+      "name": "Brewer",
+      "priority": 2,
+      "requires_burn": true,
+      "description": "Each night, if you burn your marshmallow, learn one person loyal to your camp."
+    },
+    {
+      "name": "Wood Chopper",
+      "priority": 2,
+      "description": "Each night, if players were swapped that day, learn how many are loyal to your camp."
+    },
+    {
+      "name": "Firestarter",
+      "priority": 0,
+      "requires_burn": true,
+      "description": "Each night, if you burn your marshmallow, choose a player. Their roast will always succeed tonight."
+    },
+    {
+      "name": "Ranger",
+      "priority": 2,
+      "description": "If you choose to burn three nights in a row, roast five marshmallows the following night."
+    },
+    {
+      "name": "Raccoon",
+      "priority": 1,
+      "requires_burn": true,
+      "once_per_game": true,
+      "description": "Once per game, during the night, you may burn your marshmallow and choose two players: these players swap camps."
+    },
+    {
+      "name": "Sleepwalker",
+      "priority": 2,
+      "requires_burn": true,
+      "description": "Each night, if you burn your marshmallow, choose a player. If they are swapped during the day tomorrow, they lose 2 marshmallows."
+    },
+    {
+      "name": "Water Boy",
+      "priority": 2,
+      "description": "Each night, choose a player (not yourself) from any camp. They are safe from being swapped tomorrow."
+    },
+    {
+      "name": "Firefly Catcher",
+      "priority": 2,
+      "requires_burn": true,
+      "description": "Each night, if you burn your marshmallow, choose two players (not yourself), and learn if any burned tonight."
+    },
+    {
+      "name": "Mosquito",
+      "priority": 2,
+      "requires_burn": true,
+      "description": "If a swap happened the previous day, burn your marshmallow to steal a marshmallow from the other side."
+    },
+    {
+      "name": "Bear Wrangler",
+      "priority": 2,
+      "requires_burn": true,
+      "once_per_game": true,
+      "description": "Once per game, at night, choose a player. If you burn your marshmallow, give them all your marshmallows."
+    },
+    {
+      "name": "Trailblazer",
+      "priority": 2,
+      "requires_burn": true,
+      "description": "Each night, if you burn a marshmallow, choose a player. You learn their role."
+    },
+    {
+      "name": "Night Owl",
+      "priority": 2,
+      "description": "You may open your eyes at night. Once you do this, you can no longer roast."
+    },
+    {
+      "name": "Tent Inspector",
+      "priority": 2,
+      "description": "Each night, learn how many players burned last night."
+    },
+    {
+      "name": "Lanternkeeper",
+      "priority": 2,
+      "requires_burn": true,
+      "once_per_game": true,
+      "description": "Once per game, burn your marshmallow and choose a player in your camp. This player will be your side's swap candidate today regardless of your camp's choice."
+    },
+    {
+      "name": "Echo",
+      "priority": 2,
+      "requires_burn": true,
+      "once_per_game": true,
+      "description": "Once per game, choose to roast one marshmallow for each player on your team. Your teammates will have no abilities until dusk."
+    },
+    {
+      "name": "Storyteller",
+      "priority": 2,
+      "once_per_game": true,
+      "description": "Once per game, during the day, publicly choose a player. If you burned last night, the Counselor will announce their marshmallow count. If you roasted, learn false information."
+    },
+    {
+      "name": "Stargazer",
+      "priority": 2,
+      "description": "On the fourth day, publicly guess a player of the opposite loyalty's marshmallow count. If you are correct, you steal two of their marshmallows."
+    },
+    {
+      "name": "Poor Sport",
+      "priority": 2,
+      "description": "If you are swapped during the day, everyone burns tonight."
+    }
+  ]
+}

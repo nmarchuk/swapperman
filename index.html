@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swapperman</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Gothic&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <header class="site-header">
+      <h1>The Swapperman</h1>
+      <p class="tagline">The Swapperman only hunts at night.</p>
+    </header>
+
+    <main>
+
+      <div class="reveal-bar" id="reveal-bar">
+        <label class="reveal-toggle">
+          <input type="checkbox" id="reveal-toggle">
+          <span class="reveal-switch"></span>
+          <span class="reveal-toggle-text">Reveal mode</span>
+        </label>
+        <p class="reveal-bar-hint" id="reveal-bar-hint">Roles are visible while setting up.</p>
+      </div>
+
+      <section id="setup" class="panel">
+        <h2>Players</h2>
+
+        <form class="player-form" id="player-form">
+          <input
+            type="text"
+            id="player-input"
+            class="player-input"
+            placeholder="Player name"
+            autocomplete="off"
+            maxlength="24">
+          <button type="submit" class="btn btn-add" id="add-player" aria-label="Add player">+</button>
+        </form>
+
+        <p class="empty-state" id="players-empty">No players yet.</p>
+        <div class="unassigned-row" id="none-grid"></div>
+
+        <div class="assign-bar">
+          <button type="button" class="btn assign-btn assign-left" id="assign-left" disabled>
+            Assign to <span class="assign-label" id="assign-left-label">Camp Yellow</span>
+          </button>
+          <button type="button" class="btn assign-btn assign-right" id="assign-right" disabled>
+            Assign to <span class="assign-label" id="assign-right-label">Camp Green</span>
+          </button>
+        </div>
+
+      </section>
+
+      <div class="camp-tools" id="camp-tools">
+        <p class="camp-tools-hint" id="infiltrate-hint"></p>
+        <div class="camp-tools-actions">
+          <label class="infiltrator-count">
+            Infiltrators each
+            <select id="infiltrator-count" disabled></select>
+          </label>
+          <button type="button" class="btn" id="assign-infiltrators" disabled>Assign infiltrators</button>
+          <!-- Dev only: safe to comment out this button, the script handles its absence -->
+          <button type="button" class="btn btn-secondary" id="load-test" disabled>Load 6-player test game</button>
+          <!-- /Dev only -->
+          <button type="button" class="btn btn-start" id="start-game" disabled>Start game</button>
+        </div>
+      </div>
+
+      <div class="game-bar" id="game-bar" hidden>
+        <p class="game-bar-text" id="game-bar-text">Game in progress.</p>
+        <div class="game-bar-actions">
+          <button type="button" class="btn" id="swap-camps" disabled>Swap camps</button>
+          <button type="button" class="btn" id="end-roasting" disabled>End roasting phase</button>
+          <button type="button" class="btn btn-secondary" id="clear-actions" disabled>Clear choices</button>
+          <button type="button" class="btn btn-secondary" id="new-game">New game</button>
+        </div>
+      </div>
+
+      <div class="teams">
+
+        <section class="panel team-panel team-left">
+          <input
+            type="text"
+            class="team-name"
+            id="team-left-name"
+            value="Camp Yellow"
+            aria-label="Left team name"
+            maxlength="20">
+          <div class="team-head">
+            <p class="team-count"><span id="left-count">0</span> players</p>
+            <span class="team-total" id="left-total" hidden>0</span>
+          </div>
+          <div class="team-grid" id="left-grid"></div>
+        </section>
+
+        <section class="panel team-panel team-right">
+          <input
+            type="text"
+            class="team-name"
+            id="team-right-name"
+            value="Camp Green"
+            aria-label="Right team name"
+            maxlength="20">
+          <div class="team-head">
+            <p class="team-count"><span id="right-count">0</span> players</p>
+            <span class="team-total" id="right-total" hidden>0</span>
+          </div>
+          <div class="team-grid" id="right-grid"></div>
+        </section>
+
+      </div>
+
+      <section id="roles" class="panel">
+        <div class="roles-head">
+          <h2>List of Roles</h2>
+          <label class="btn btn-secondary roles-upload">
+            Upload JSON
+            <input type="file" id="roles-file" accept=".json,application/json" hidden>
+          </label>
+        </div>
+        <p class="roles-source" id="roles-source"></p>
+        <p class="roles-status" id="roles-status">Loading roles&hellip;</p>
+
+        <div class="roles-columns" id="roles-columns" hidden>
+
+          <div class="roles-column">
+            <h3 class="roles-heading roles-heading-left">
+              <span id="roles-left-name">Camp Yellow</span>
+              <span class="roles-progress" id="roles-left-progress">0 / 0</span>
+            </h3>
+            <div class="role-list" id="roles-left-list"></div>
+          </div>
+
+          <div class="roles-column">
+            <h3 class="roles-heading roles-heading-right">
+              <span id="roles-right-name">Camp Green</span>
+              <span class="roles-progress" id="roles-right-progress">0 / 0</span>
+            </h3>
+            <div class="role-list" id="roles-right-list"></div>
+          </div>
+
+          <div class="assign-roles-bar" id="assign-roles-bar">
+            <p class="assign-roles-hint" id="assign-roles-hint"></p>
+            <div class="assign-roles-actions">
+              <button type="button" class="btn" id="auto-assign" disabled>Auto-assign roles</button>
+              <button type="button" class="btn btn-secondary" id="clear-assign" disabled>Clear</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="night-order" class="panel" hidden>
+        <h2>Night Order</h2>
+        <ol class="night-list" id="night-list"></ol>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; <span id="year"></span> Hot on the Dog Tower, Inc.</p>
+    </footer>
+
+  </div>
+
+  <div class="reveal-modal" id="reveal-modal" hidden>
+    <div class="reveal-inner">
+      <p class="reveal-player" id="reveal-player"></p>
+      <p class="reveal-role" id="reveal-role"></p>
+      <p class="reveal-desc" id="reveal-desc"></p>
+      <p class="reveal-close-hint">Press any key or click to close</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

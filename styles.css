@@ -1,0 +1,1295 @@
+/* ==========================================================================
+   Theme variables — edit these to restyle the whole site
+   ========================================================================== */
+
+:root {
+  /* Layout */
+  --container-width: 1100px;
+  --container-radius: 12px;
+  --gap: 24px;
+
+  /* Text */
+  --color-text: #e8ecf5;
+  --color-heading: #ffffff;
+  --color-muted: #9aa6bf;
+  --color-link: #7fb8ff;
+  --color-link-hover: #b3d5ff;
+
+  /* Surfaces */
+  --color-container-bg: rgba(12, 18, 34, 0.82);
+  --color-panel-bg: rgba(255, 255, 255, 0.04);
+  --color-border: rgba(255, 255, 255, 0.14);
+
+  /* Buttons */
+  --color-btn-bg: #3b6fd4;
+  --color-btn-bg-hover: #4d84ee;
+  --color-btn-text: #ffffff;
+  --color-btn-secondary-bg: transparent;
+  --color-btn-secondary-text: #e8ecf5;
+
+  /* Teams */
+  --color-team-left: #e6c53f;
+  --color-team-right: #4caf72;
+
+  /* Type */
+  --font-main: 'Special Gothic', system-ui, sans-serif;
+  --font-size-base: 17px;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+/* Author display rules (flex/grid) outrank the browser's [hidden] style, so
+   the attribute silently stops working. This puts it back for everything. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  padding: var(--gap) 0;
+  min-height: 100vh;
+
+  font-family: var(--font-main);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--color-text);
+
+  background-image: url('night_sky.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+h1, h2, h3 {
+  color: var(--color-heading);
+  line-height: 1.2;
+  margin: 0 0 0.4em;
+  letter-spacing: 0.01em;
+}
+
+h1 { font-size: 2.6rem; }
+h2 { font-size: 1.6rem; }
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Fixed-width centered container
+   ========================================================================== */
+
+.container {
+  width: var(--container-width);
+  max-width: calc(100% - 2 * var(--gap));
+  margin: 0 auto;
+  padding: calc(var(--gap) * 1.5);
+
+  background-color: var(--color-container-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--container-radius);
+}
+
+/* ==========================================================================
+   Header / nav / footer
+   ========================================================================== */
+
+.site-header {
+  text-align: center;
+  margin-bottom: var(--gap);
+}
+
+.tagline {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.site-nav {
+  display: flex;
+  justify-content: center;
+  gap: var(--gap);
+  padding: 12px 0;
+  margin-bottom: var(--gap);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-footer {
+  margin-top: var(--gap);
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+/* ==========================================================================
+   Reveal mode toggle
+   ========================================================================== */
+
+.reveal-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: var(--gap);
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-panel-bg);
+}
+
+.reveal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* The native checkbox drives state but isn't drawn */
+.reveal-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.reveal-switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 13px;
+  background-color: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--color-border);
+}
+
+.reveal-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--color-muted);
+}
+
+.reveal-toggle input:checked + .reveal-switch {
+  background-color: var(--color-btn-bg);
+  border-color: var(--color-btn-bg-hover);
+}
+
+.reveal-toggle input:checked + .reveal-switch::after {
+  left: 22px;
+  background-color: #ffffff;
+}
+
+.reveal-toggle input:focus-visible + .reveal-switch {
+  outline: 2px solid var(--color-btn-bg-hover);
+  outline-offset: 2px;
+}
+
+.reveal-toggle-text {
+  color: var(--color-heading);
+}
+
+.reveal-bar-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+/* Cards that will open the reveal screen */
+.player-card.is-revealable {
+  cursor: pointer;
+}
+
+.player-card.is-revealable:hover {
+  border-color: var(--color-btn-bg-hover);
+}
+
+/* ==========================================================================
+   Reveal screen
+   ========================================================================== */
+
+.reveal-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
+
+  background-color: #05070d;
+  cursor: pointer;
+}
+
+.reveal-inner {
+  max-width: 700px;
+  text-align: center;
+}
+
+.reveal-player {
+  margin: 0 0 8px;
+  color: var(--color-muted);
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reveal-role {
+  margin: 0 0 20px;
+  color: var(--color-heading);
+  font-size: clamp(2.6rem, 11vw, 6rem);
+  line-height: 1.05;
+}
+
+.reveal-desc {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+  line-height: 1.5;
+}
+
+.reveal-close-hint {
+  margin: 40px 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+/* Camp color on the revealed role */
+.reveal-modal[data-team="left"]  .reveal-role { color: var(--color-team-left); }
+.reveal-modal[data-team="right"] .reveal-role { color: var(--color-team-right); }
+
+/* ==========================================================================
+   Panels
+   ========================================================================== */
+
+.panel {
+  background-color: var(--color-panel-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+.panel:last-child {
+  margin-bottom: 0;
+}
+
+.panel ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.output {
+  color: var(--color-muted);
+  min-height: 1.6em;
+  margin: 12px 0 0;
+}
+
+/* ==========================================================================
+   Player entry form
+   ========================================================================== */
+
+.player-form {
+  display: flex;
+  max-width: 50%;
+  gap: 10px;
+}
+
+.player-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+
+  background-color: rgba(0, 0, 0, 0.25);
+  color: var(--color-text);
+
+  font-family: var(--font-main);
+  font-size: 1rem;
+}
+
+.player-input::placeholder {
+  color: var(--color-muted);
+}
+
+.player-input:focus {
+  outline: none;
+  border-color: var(--color-btn-bg-hover);
+}
+
+/* Flashed briefly when a name is rejected as a duplicate */
+.player-input.is-rejected {
+  border-color: #d9534f;
+}
+
+/* Unassigned players — a row that wraps once it runs out of width */
+.unassigned-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.unassigned-row:empty {
+  margin-top: 0;
+}
+
+.unassigned-row .player-card {
+  width: 160px;
+  cursor: pointer;
+}
+
+.unassigned-row .player-card:hover {
+  border-color: var(--color-btn-bg-hover);
+}
+
+.player-card.is-selected {
+  border-color: var(--color-btn-bg-hover);
+  background-color: rgba(59, 111, 212, 0.28);
+}
+
+/* Picked for a camp swap during play */
+.player-card.is-pickable {
+  cursor: pointer;
+}
+
+.player-card.is-swap-picked {
+  border-color: var(--color-btn-bg-hover);
+  background-color: rgba(59, 111, 212, 0.28);
+}
+
+/* ==========================================================================
+   Assign buttons
+   ========================================================================== */
+
+.assign-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn.assign-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.btn.assign-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn.assign-left:not(:disabled):hover {
+  background-color: var(--color-team-left);
+  border-color: var(--color-team-left);
+  color: #1a1a1a;
+}
+
+.btn.assign-right:not(:disabled):hover {
+  background-color: var(--color-team-right);
+  border-color: var(--color-team-right);
+  color: #10231a;
+}
+
+/* Class, not ID — an ID here would outrank the :hover override below */
+.assign-left  .assign-label { color: var(--color-team-left); }
+.assign-right .assign-label { color: var(--color-team-right); }
+
+/* On hover the button takes the team color, so the label follows the
+   button's own dark text color instead of vanishing into the background */
+.btn.assign-btn:hover .assign-label {
+  color: inherit;
+}
+
+/* Two classes, so this beats .btn even though .btn comes later in the file */
+.btn.btn-add {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+
+  /* Flex centering keeps the glyph centered regardless of font size —
+     inline-block padding drifts once the '+' gets large. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  font-size: 2rem;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   Player cards
+   ========================================================================== */
+
+/* ==========================================================================
+   Role selection
+   ========================================================================== */
+
+.roles-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.roles-head h2 {
+  margin: 0;
+}
+
+/* File input is hidden; the styled label is the visible control */
+.roles-upload {
+  flex: 0 0 auto;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+}
+
+.roles-source {
+  margin: 0 0 6px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.roles-source:empty {
+  display: none;
+}
+
+.roles-status {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.roles-status.is-error {
+  color: #e8837d;
+}
+
+.roles-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.roles-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  font-size: 1.15rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.roles-heading-left  { border-bottom-color: var(--color-team-left); }
+.roles-heading-right { border-bottom-color: var(--color-team-right); }
+
+.roles-progress {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.roles-progress.is-full {
+  color: var(--color-heading);
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.role-option {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.role-option:hover:not(.is-disabled) {
+  border-color: var(--color-btn-bg-hover);
+}
+
+.role-option.is-selected {
+  border-color: var(--color-btn-bg-hover);
+  background-color: rgba(59, 111, 212, 0.28);
+}
+
+/* Full camp, or the role is already in play on the other side */
+.role-option.is-disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.role-option input {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+/* min-width:0 lets the clamped description actually shrink inside the flex row */
+.role-option > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.role-name {
+  display: block;
+  color: var(--color-heading);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+/* Clamped to one line — full text is in the row's tooltip */
+.role-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.role-taken {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* Spans both role columns */
+.assign-roles-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.assign-roles-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.assign-roles-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.assign-roles-actions .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ==========================================================================
+   Per-player role picker (on team cards)
+   ========================================================================== */
+
+.player-role {
+  width: 100%;
+  margin-top: 10px;
+  padding: 5px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+
+  background-color: rgba(0, 0, 0, 0.4);
+  color: var(--color-text);
+
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+}
+
+.player-role:focus {
+  outline: none;
+  border-color: var(--color-btn-bg-hover);
+}
+
+/* Marks a role the user pinned by hand rather than one that was rolled */
+.player-role.is-locked {
+  border-color: var(--color-btn-bg-hover);
+  color: var(--color-heading);
+}
+
+.player-assigned {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-heading);
+  font-size: 0.9rem;
+}
+
+.player-assigned .lock-mark {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.player-reminder {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 4px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+
+  background-color: rgba(0, 0, 0, 0.3);
+  color: var(--color-text);
+
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+}
+
+.player-reminder::placeholder {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.player-reminder:focus {
+  outline: none;
+  border-color: var(--color-btn-bg-hover);
+}
+
+/* ==========================================================================
+   Night order
+   ========================================================================== */
+
+.night-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: night-step;
+}
+
+.night-step {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.night-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.night-caret {
+  flex: 0 0 auto;
+  width: 1em;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.night-row:hover .night-caret {
+  color: var(--color-heading);
+}
+
+.night-step + .night-step {
+  margin-top: 8px;
+}
+
+.night-step[data-alignment="left"]  { border-left-color: var(--color-team-left); }
+.night-step[data-alignment="right"] { border-left-color: var(--color-team-right); }
+
+.night-row::before {
+  counter-increment: night-step;
+  content: counter(night-step);
+  flex: 0 0 1.6em;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.night-step-body {
+  flex: 1;
+}
+
+.night-role {
+  color: var(--color-heading);
+  font-size: 1.05rem;
+}
+
+.night-player {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.night-player[data-alignment="left"]  { color: var(--color-team-left); }
+.night-player[data-alignment="right"] { color: var(--color-team-right); }
+
+/* Expanded history — deliberately terse */
+.night-history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 0 calc(1.6em + 1em + 20px);
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.history-flag {
+  color: var(--color-heading);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 0.75rem;
+}
+
+.history-night {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.history-swap {
+  color: var(--color-heading);
+  font-size: 0.95rem;
+}
+
+.history-used {
+  color: #e6c53f;
+  font-size: 0.95rem;
+}
+
+.history-adjust {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* Once-per-game spend marker */
+.once-toggle {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+
+  background: none;
+  color: var(--color-muted);
+
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.once-toggle:hover {
+  color: var(--color-heading);
+  border-color: var(--color-btn-bg-hover);
+}
+
+.once-toggle.is-used {
+  color: #10231a;
+  background-color: #e6c53f;
+  border-color: #e6c53f;
+}
+
+.history-empty {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* Role that can't act tonight: didn't burn, or already spent a once-per-game
+   ability. Dimming is scoped to the text so the spend toggle stays legible —
+   opacity on the row would drag its own control down with it. */
+.night-step.is-inactive .night-step-body,
+.night-step.is-inactive .night-action,
+.night-step.is-inactive .night-caret {
+  opacity: 0.35;
+}
+
+.night-step.is-inactive .night-role {
+  text-decoration: line-through;
+}
+
+.night-action {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.night-action.is-undecided {
+  filter: grayscale(1);
+  opacity: 0.3;
+}
+
+.night-desc {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   Camp tools
+   ========================================================================== */
+
+.camp-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: var(--gap);
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-panel-bg);
+}
+
+.camp-tools-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.camp-tools-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.infiltrator-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.infiltrator-count select {
+  padding: 5px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: var(--color-text);
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+}
+
+.infiltrator-count select:disabled {
+  opacity: 0.4;
+}
+
+.btn.btn-start:not(:disabled) {
+  background-color: var(--color-team-right);
+  color: #10231a;
+}
+
+.btn.btn-start:not(:disabled):hover {
+  background-color: #5fc586;
+  color: #10231a;
+}
+
+.game-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: var(--gap);
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-panel-bg);
+}
+
+.game-bar-text {
+  margin: 0;
+  color: var(--color-heading);
+}
+
+.game-bar-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.game-bar-actions .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ==========================================================================
+   Roast / burn toggle
+   ========================================================================== */
+
+/* Counter + roast/burn, stacked in a narrow column at the card's top-right.
+   The card reserves right padding (below) so body text never runs under it. */
+.player-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.player-card.is-playing {
+  padding-right: 92px;
+}
+
+.player-marshmallows {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.marsh-count {
+  min-width: 1.1em;
+  text-align: center;
+  color: var(--color-heading);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.marsh-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+
+  background-color: rgba(0, 0, 0, 0.35);
+  color: var(--color-text);
+
+  font-family: var(--font-main);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.marsh-btn:hover:not(:disabled) {
+  color: var(--color-heading);
+  border-color: var(--color-btn-bg-hover);
+}
+
+.marsh-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.player-action {
+  display: flex;
+  gap: 6px;
+}
+
+.action-btn {
+  width: 34px;
+  padding: 4px 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+
+  background-color: rgba(0, 0, 0, 0.3);
+  /* Emoji render flat until the choice is made */
+  filter: grayscale(1);
+  opacity: 0.5;
+
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+.action-btn:hover {
+  filter: grayscale(0.4);
+  opacity: 0.85;
+  border-color: var(--color-btn-bg-hover);
+}
+
+.action-btn.is-active {
+  filter: none;
+  opacity: 1;
+}
+
+.action-roast.is-active {
+  border-color: #7fb8ff;
+  background-color: rgba(127, 184, 255, 0.18);
+}
+
+.action-burn.is-active {
+  border-color: #e2703a;
+  background-color: rgba(226, 112, 58, 0.22);
+}
+
+.camp-tools .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ==========================================================================
+   Alignment badge — who a player is actually loyal to
+   ========================================================================== */
+
+.player-align-tag {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.player-align-tag[data-alignment="left"]  { color: var(--color-team-left); }
+.player-align-tag[data-alignment="right"] { color: var(--color-team-right); }
+
+.player-card.is-infiltrator {
+  border-style: dashed;
+}
+
+/* ==========================================================================
+   Team columns
+   ========================================================================== */
+
+.teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.team-panel {
+  margin-bottom: 0;
+  border-top: 3px solid var(--color-border);
+}
+
+.team-left  { border-top-color: var(--color-team-left); }
+.team-right { border-top-color: var(--color-team-right); }
+
+/* Renameable team headings — an input styled to read as an h2 */
+.team-name {
+  display: block;
+  width: 100%;
+  margin: 0 0 2px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+
+  background: none;
+  color: var(--color-heading);
+
+  font-family: var(--font-main);
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.team-name:hover {
+  border-color: var(--color-border);
+}
+
+.team-name:focus {
+  outline: none;
+  border-color: var(--color-btn-bg-hover);
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.team-left  .team-name { color: var(--color-team-left); }
+.team-right .team-name { color: var(--color-team-right); }
+
+.team-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.team-count {
+  margin: 0;
+  padding-left: 7px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+/* Camp marshmallow total — deliberately unlabelled */
+.team-total {
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--color-heading);
+}
+
+.team-left  .team-total { color: var(--color-team-left); }
+.team-right .team-total { color: var(--color-team-right); }
+
+.team-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.player-card {
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Physical camp — the fallback, and what reveal mode shows */
+.player-card[data-team="left"]  { border-left-color: var(--color-team-left); }
+.player-card[data-team="right"] { border-left-color: var(--color-team-right); }
+
+/* Loyalty wins where it's known, so an infiltrator reads as the other camp.
+   Same specificity as the rules above, so order is what makes this win. */
+.player-card[data-alignment="left"]  { border-left-color: var(--color-team-left); }
+.player-card[data-alignment="right"] { border-left-color: var(--color-team-right); }
+
+.player-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  /* Long names wrap instead of blowing out the grid track */
+  overflow-wrap: anywhere;
+  /* Clears the remove button */
+  padding-right: 30px;
+}
+
+/* In play the card already reserves right space for the controls column,
+   so the heading doesn't need its own gutter too. */
+.player-card.is-playing h3 {
+  padding-right: 0;
+}
+
+
+/* Slot for per-player info added later */
+.player-details {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.player-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+
+  color: var(--color-muted);
+  font-family: var(--font-main);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.player-remove:hover {
+  color: var(--color-heading);
+}
+
+.empty-state {
+  color: var(--color-muted);
+  margin: 16px 0 0;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+
+  background-color: var(--color-btn-bg);
+  color: var(--color-btn-text);
+
+  font-family: var(--font-main);
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background-color: var(--color-btn-bg-hover);
+  color: var(--color-btn-text);
+  text-decoration: none;
+}
+
+.btn-secondary {
+  background-color: var(--color-btn-secondary-bg);
+  color: var(--color-btn-secondary-text);
+  border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-panel-bg);
+  color: var(--color-btn-secondary-text);
+}
+
+/* ==========================================================================
+   Small screens — container gives up its fixed width
+   ========================================================================== */
+
+@media (max-width: 600px) {
+  :root {
+    --gap: 16px;
+  }
+
+  h1 { font-size: 2rem; }
+
+  .site-nav {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* Columns stack rather than squeezing to unusable widths */
+  .teams {
+    grid-template-columns: 1fr;
+  }
+
+  .player-form {
+    max-width: 100%;
+  }
+}
