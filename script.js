@@ -63,6 +63,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Loaded from roles.json
   var roles = [];
+  // True only when the user uploaded their own set. The default set is never
+  // persisted, so edits to roles.json always reach the site on next load.
+  var rolesCustom = false;
 
   // Role names picked per camp, in click order. Arrays rather than Sets so
   // that shrinking a camp can drop the most recent picks first.
@@ -114,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Optional: safe to delete or comment out the button in index.html
   var loadTestBtn = document.getElementById('load-test');
   var newGameBtn = document.getElementById('new-game');
+  var resetAllBtn = document.getElementById('reset-all');
   var gameBar = document.getElementById('game-bar');
   var gameBarText = document.getElementById('game-bar-text');
   var clearActionsBtn = document.getElementById('clear-actions');
@@ -175,15 +179,28 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function assignPlayer(player, team) {
+    player.team = team;
+    // Loyal to their own camp until infiltrators are drawn
+    player.alignment = team;
+
+    if (selectedId === player.id) {
+      selectedId = null;
+    }
+  }
+
   function assignSelected(team) {
-    players.forEach(function (p) {
-      if (p.id === selectedId) {
-        p.team = team;
-        // Loyal to their own camp until infiltrators are drawn
-        p.alignment = team;
-      }
-    });
+    var player = playerById(selectedId);
+    if (player) {
+      assignPlayer(player, team);
+    }
     selectedId = null;
+  }
+
+  function unassignedPlayers() {
+    return players.filter(function (p) {
+      return p.team === null;
+    });
   }
 
   // One player per camp is secretly loyal to the opposite camp. Re-running
@@ -214,10 +231,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var swapSelection = [];
 
   function playerById(id) {
-    var match = players.filter(function (p) {
+    return players.find(function (p) {
       return p.id === id;
-    });
-    return match.length ? match[0] : null;
+    }) || null;
   }
 
   function toggleSwapSelection(id) {
@@ -358,6 +374,21 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
+  // Tooltip explaining why Start is disabled, empty once the game can begin
+  function startButtonReason() {
+    if (readyToStart()) {
+      return '';
+    }
+    if (teamSize('left') === 0 || teamSize('right') === 0) {
+      return 'Both camps need at least one player.';
+    }
+    if (!campsBalanced()) {
+      return 'Camps must be equal, or differ by at most one player (' +
+        teamSize('left') + ' vs ' + teamSize('right') + ').';
+    }
+    return 'Every player on a camp needs a role.';
+  }
+
   // Single owner of what's on screen. Reveal mode is a setup-phase tool only —
   // it can't be reached once the game starts.
   function applyView() {
@@ -395,6 +426,25 @@ document.addEventListener('DOMContentLoaded', function () {
     return players.some(function (p) {
       return p.team !== null && p.alignment !== null && p.alignment !== p.team;
     });
+  }
+
+  // One line describing the current infiltrator spread, for the camp-tools bar
+  function infiltratorHint() {
+    if (!canAssignInfiltrators()) {
+      return 'Both camps need at least one player.';
+    }
+    if (!hasInfiltrators()) {
+      return 'Everyone is loyal to their own camp.';
+    }
+
+    var left = infiltratorsIn('left');
+    var right = infiltratorsIn('right');
+    if (left === right) {
+      return left + ' player' + (left === 1 ? '' : 's') +
+        ' in each camp loyal to the other side.';
+    }
+    return left + ' loyal to the other side on the left, ' +
+      right + ' on the right.';
   }
 
   // Rebuilds the count dropdown to offer 1..max, clamped to what the current
@@ -688,10 +738,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function roleByName(name) {
-    var match = roles.filter(function (r) {
+    return roles.find(function (r) {
       return r.name === name;
-    });
-    return match.length ? match[0] : null;
+    }) || null;
   }
 
   function closeReveal() {
@@ -1023,6 +1072,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     assignButtons.left.disabled = selectedId === null || revealMode;
     assignButtons.right.disabled = selectedId === null || revealMode;
+    // Nothing to spin for once everyone has a camp
+    wheelBtn.disabled = revealMode || unassignedPlayers().length === 0;
 
     applyView();
     renderNightOrder();
@@ -1041,16 +1092,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     startBtn.disabled = !readyToStart();
     // Explain a disabled Start button rather than leaving it a mystery
-    if (readyToStart()) {
-      startBtn.title = '';
-    } else if (teamSize('left') === 0 || teamSize('right') === 0) {
-      startBtn.title = 'Both camps need at least one player.';
-    } else if (!campsBalanced()) {
-      startBtn.title = 'Camps must be equal, or differ by at most one player (' +
-        teamSize('left') + ' vs ' + teamSize('right') + ').';
-    } else {
-      startBtn.title = 'Every player on a camp needs a role.';
-    }
+    startBtn.title = startButtonReason();
 
     // Optional dev affordance — the button can be commented out of the HTML
     if (loadTestBtn) {
@@ -1058,19 +1100,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     infiltrateBtn.disabled = !canAssignInfiltrators();
     renderInfiltratorCount();
-
-    if (!canAssignInfiltrators()) {
-      infiltrateHint.textContent = 'Both camps need at least one player.';
-    } else if (hasInfiltrators()) {
-      var each = infiltratorsIn('left') === infiltratorsIn('right');
-      infiltrateHint.textContent = each
-        ? infiltratorsIn('left') + ' player' + (infiltratorsIn('left') === 1 ? '' : 's') +
-          ' in each camp loyal to the other side.'
-        : infiltratorsIn('left') + ' loyal to the other side on the left, ' +
-          infiltratorsIn('right') + ' on the right.';
-    } else {
-      infiltrateHint.textContent = 'Everyone is loyal to their own camp.';
-    }
+    infiltrateHint.textContent = infiltratorHint();
 
     // Camp sizes changed, so role capacity did too
     renderRoles();
@@ -1122,6 +1152,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     picked[team].push(roleName);
+  }
+
+  var ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+  function toRoman(n) {
+    return ROMAN[n] || String(n);
+  }
+
+  // Thin labeled rule that separates one role group from the next
+  function buildGroupDivider(group) {
+    var divider = document.createElement('div');
+    divider.className = 'role-group-divider';
+    var label = document.createElement('span');
+    label.className = 'role-group-label';
+    label.textContent = toRoman(group);
+    divider.appendChild(label);
+    return divider;
   }
 
   function buildRoleOption(team, role) {
@@ -1312,6 +1359,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     renderAssignControls();
 
+    // Show roles grouped, regardless of their order in roles.json. Stable sort
+    // keeps each group's roles in the order they appear in the file.
+    var ordered = roles.slice().sort(function (a, b) {
+      return (a.group || 0) - (b.group || 0);
+    });
+
     ['left', 'right'].forEach(function (team) {
       var list = roleLists[team];
 
@@ -1319,7 +1372,14 @@ document.addEventListener('DOMContentLoaded', function () {
       var scroll = list.scrollTop;
       list.textContent = '';
 
-      roles.forEach(function (role) {
+      var lastGroup = null;
+      ordered.forEach(function (role) {
+        // Mark each group change with a thin divider carrying the incoming
+        // group's Roman numeral (skip the very first group)
+        if (role.group !== lastGroup) {
+          list.appendChild(buildGroupDivider(role.group));
+          lastGroup = role.group;
+        }
         list.appendChild(buildRoleOption(team, role));
       });
 
@@ -1329,6 +1389,285 @@ document.addEventListener('DOMContentLoaded', function () {
       roleProgress[team].textContent = picked[team].length + ' / ' + size + ' chosen';
       roleProgress[team].classList.toggle('is-full', size > 0 && picked[team].length === size);
     });
+  }
+
+  // ==========================================================================
+  // Team wheel
+  //
+  // A full-screen spinner that deals the unassigned players out to the camps,
+  // one spin at a time. Every unassigned player gets an equal slice; the camp
+  // a winner lands in alternates on each spin, so the two stay level.
+  //
+  // Geometry: slice 0 starts at 12 o'clock and they run clockwise, which is
+  // exactly how conic-gradient lays its stops out. The pointer sits at 12
+  // o'clock too, so a slice at clockwise angle `a` is under the pointer once
+  // the disc has been rotated by −a.
+  // ==========================================================================
+
+  var wheelBtn = document.getElementById('wheel-btn');
+  var wheelModal = document.getElementById('wheel-modal');
+  var wheelDisc = document.getElementById('wheel-disc');
+  var wheelSpinBtn = document.getElementById('wheel-spin');
+  var wheelCloseBtn = document.getElementById('wheel-close');
+  var wheelResult = document.getElementById('wheel-result');
+  var wheelNext = document.getElementById('wheel-next');
+  var wheelNextTeam = document.getElementById('wheel-next-team');
+
+  // Must stay in step with the .wheel-disc transition duration in styles.css
+  var WHEEL_SPIN_MS = 8000;
+  // How long the winner sits lit up under the pointer before the wheel is
+  // redrawn without them. Matches the .wheel-glow pulse in styles.css.
+  var WHEEL_PAUSE_MS = 2000;
+
+  // Camp the next winner joins. Flips after every spin.
+  var wheelTeam = 'left';
+  // Player ids in slice order, i.e. what the disc currently shows
+  var wheelOrder = [];
+  // Absolute rotation in degrees, only ever counted upwards so each spin
+  // carries on clockwise from where the last one stopped
+  var wheelRotation = 0;
+  var wheelSpinning = false;
+  // Overlay wedge that lights the winning slice. Rebuilt with the disc, so it
+  // is held here rather than looked up.
+  var wheelGlow = null;
+  // Bumped on every spin and on close, so a spin abandoned part-way through
+  // can't come back later and seat someone
+  var wheelSpinId = 0;
+
+  // Evenly spaced hues, with alternating lightness so neighbouring slices stay
+  // apart even when a big roster packs the hues close together. Light enough
+  // throughout that the dark slice labels stay readable.
+  function sliceColor(index, total) {
+    var hue = Math.round((index * 360) / total);
+    var light = index % 2 === 0 ? 66 : 54;
+    return 'hsl(' + hue + ', 68%, ' + light + '%)';
+  }
+
+  // Names get smaller as slices get thinner
+  function wheelLabelSize(total) {
+    if (total > 14) {
+      return '0.85rem';
+    }
+    if (total > 9) {
+      return '1.05rem';
+    }
+    if (total > 5) {
+      return '1.3rem';
+    }
+    return '1.6rem';
+  }
+
+  // Setting textContent detaches the camp span, so put it straight back —
+  // holding the one element keeps its camp-colored styling hook alive.
+  function renderWheelHead(remaining) {
+    if (!remaining) {
+      wheelNext.textContent = 'Everyone has a camp.';
+      delete wheelModal.dataset.team;
+      return;
+    }
+
+    wheelNext.textContent = 'Next pick joins ';
+    wheelNextTeam.textContent = campName(wheelTeam);
+    wheelNext.appendChild(wheelNextTeam);
+    wheelModal.dataset.team = wheelTeam;
+  }
+
+  function renderWheel() {
+    var pool = unassignedPlayers();
+
+    wheelOrder = pool.map(function (p) {
+      return p.id;
+    });
+
+    wheelDisc.textContent = '';
+    wheelDisc.classList.toggle('is-empty', pool.length === 0);
+    wheelDisc.style.fontSize = wheelLabelSize(pool.length);
+
+    wheelSpinBtn.disabled = wheelSpinning || pool.length === 0;
+    renderWheelHead(pool.length);
+
+    if (!pool.length) {
+      wheelDisc.style.background = '';
+      wheelGlow = null;
+      return;
+    }
+
+    // First child, so the names and spokes below paint over it — a lit wedge
+    // must not wash out the very name it is pointing at. A fresh element each
+    // render is also what restarts its pulse on the next win.
+    wheelGlow = document.createElement('div');
+    wheelGlow.className = 'wheel-glow';
+    wheelDisc.appendChild(wheelGlow);
+
+    var slice = 360 / pool.length;
+    var stops = [];
+
+    pool.forEach(function (player, i) {
+      var color = sliceColor(i, pool.length);
+      stops.push(color + ' ' + (i * slice) + 'deg ' + ((i + 1) * slice) + 'deg');
+
+      // The bars run outwards from the hub along 3 o'clock, so every angle
+      // measured from 12 o'clock is a quarter turn behind.
+      var label = document.createElement('div');
+      label.className = 'wheel-label';
+      label.textContent = player.name;
+      label.style.transform = 'rotate(' + ((i + 0.5) * slice - 90) + 'deg)';
+      wheelDisc.appendChild(label);
+
+      // Divider on this slice's leading edge. One per slice closes the ring.
+      var spoke = document.createElement('div');
+      spoke.className = 'wheel-spoke';
+      spoke.style.transform = 'rotate(' + (i * slice - 90) + 'deg)';
+      wheelDisc.appendChild(spoke);
+    });
+
+    // A single slice would give conic-gradient nothing to interpolate between
+    wheelDisc.style.background = pool.length === 1
+      ? sliceColor(0, 1)
+      : 'conic-gradient(' + stops.join(', ') + ')';
+  }
+
+  // Lights the winning wedge for the length of the pause
+  function glowSlice(index, total) {
+    if (!wheelGlow) {
+      return;
+    }
+
+    var slice = 360 / total;
+    var from = index * slice;
+    var to = (index + 1) * slice;
+
+    wheelGlow.style.background =
+      'conic-gradient(transparent ' + from + 'deg, #ffffff ' + from + 'deg ' +
+      to + 'deg, transparent ' + to + 'deg)';
+    wheelGlow.classList.add('is-on');
+  }
+
+  // Names the winner, holds a beat for the drama, then seats them and hands
+  // the next pick to the other camp. The spin id guards the pause the same way
+  // it guards the spin: closing the wheel part-way through drops the result.
+  function landOnPlayer(id, spinId) {
+    var player = playerById(id);
+
+    // The roster can be edited from another tab's restore or a stray click
+    // while the disc was turning; if the winner is gone, just redraw.
+    if (!player || player.team !== null) {
+      wheelSpinning = false;
+      renderWheel();
+      render();
+      return;
+    }
+
+    wheelResult.textContent = player.name + ' → ' + campName(wheelTeam);
+    wheelResult.dataset.team = wheelTeam;
+    glowSlice(wheelOrder.indexOf(id), wheelOrder.length);
+
+    // Still "spinning" as far as the SPIN button is concerned — the pause is
+    // part of the same turn and must not be cut short by another press.
+    setTimeout(function () {
+      if (spinId !== wheelSpinId) {
+        return;
+      }
+
+      wheelSpinning = false;
+
+      var team = wheelTeam;
+      assignPlayer(player, team);
+      wheelTeam = otherTeam(team);
+
+      renderWheel();
+      render();
+    }, WHEEL_PAUSE_MS);
+  }
+
+  function spinWheel() {
+    if (wheelSpinning || !wheelOrder.length) {
+      return;
+    }
+
+    var total = wheelOrder.length;
+    var slice = 360 / total;
+    var winner = Math.floor(Math.random() * total);
+    var winnerId = wheelOrder[winner];
+
+    // Land somewhere inside the slice rather than dead centre, but well clear
+    // of both edges so the pointer never looks ambiguous
+    var target = (winner + 0.2 + Math.random() * 0.6) * slice;
+
+    // Whole turns for the show, then however much more brings `target` up to
+    // the pointer. Rotation only grows, so the modulo keeps `delta` positive.
+    var turns = 9 + Math.floor(Math.random() * 5);
+    var delta = (((-target - wheelRotation) % 360) + 360) % 360;
+
+    wheelSpinning = true;
+    wheelSpinBtn.disabled = true;
+    wheelResult.textContent = '';
+    delete wheelResult.dataset.team;
+
+    wheelRotation += turns * 360 + delta;
+    wheelDisc.style.transform = 'rotate(' + wheelRotation + 'deg)';
+
+    // transitionend is the real signal, but it never fires if the transition
+    // is interrupted or the tab is backgrounded — so back it with a timer and
+    // let whichever arrives first do the work.
+    var spinId = ++wheelSpinId;
+
+    function settle() {
+      // Whichever signal got here first, this spin is done listening
+      wheelDisc.removeEventListener('transitionend', settle);
+      clearTimeout(fallback);
+
+      // Closing the wheel or starting another spin abandons this one
+      if (spinId !== wheelSpinId) {
+        return;
+      }
+      landOnPlayer(winnerId, spinId);
+    }
+
+    var fallback = setTimeout(settle, WHEEL_SPIN_MS + 500);
+    wheelDisc.addEventListener('transitionend', settle);
+  }
+
+  function closeWheel() {
+    // Drop any spin still in flight rather than seating its winner behind
+    // a closed modal
+    wheelSpinId++;
+    wheelSpinning = false;
+
+    wheelModal.hidden = true;
+    document.removeEventListener('keydown', onWheelKey);
+  }
+
+  function onWheelKey(event) {
+    if (event.key === 'Escape') {
+      closeWheel();
+    }
+  }
+
+  function openWheel() {
+    if (phase !== 'setup' || revealMode || !unassignedPlayers().length) {
+      return;
+    }
+
+    // Start with whichever camp is behind, so alternating from there leaves
+    // the two within a player of each other however many names are in play.
+    wheelTeam = teamSize('left') <= teamSize('right') ? 'left' : 'right';
+
+    // Back to a known angle without animating the trip there
+    wheelSpinning = false;
+    wheelRotation = 0;
+    wheelDisc.style.transition = 'none';
+    wheelDisc.style.transform = 'rotate(0deg)';
+    // Reading the layout flushes the reset before the transition comes back
+    void wheelDisc.offsetWidth;
+    wheelDisc.style.transition = '';
+
+    wheelResult.textContent = '';
+    delete wheelResult.dataset.team;
+
+    renderWheel();
+    wheelModal.hidden = false;
+    document.addEventListener('keydown', onWheelKey);
   }
 
   // ==========================================================================
@@ -1359,6 +1698,7 @@ document.addEventListener('DOMContentLoaded', function () {
         picked: { left: picked.left, right: picked.right },
         infiltratorCount: infiltratorCount,
         roles: roles,
+        rolesCustom: rolesCustom,
         rolesTitle: rolesSource ? rolesSource.textContent : '',
         teamNames: {
           left: teamNames.left ? teamNames.left.value : '',
@@ -1417,9 +1757,12 @@ document.addEventListener('DOMContentLoaded', function () {
       return result;
     }
 
-    // Roles may be a custom uploaded set, so restore them rather than re-fetch
-    if (Array.isArray(snap.roles) && snap.roles.length) {
+    // Only restore saved roles for an uploaded set. The default set is left to
+    // loadRoles() (result.roles stays false) so edits to roles.json always show
+    // up instead of being shadowed by a stale copy cached in the save.
+    if (snap.rolesCustom && Array.isArray(snap.roles) && snap.roles.length) {
       roles = snap.roles;
+      rolesCustom = true;
       if (rolesSource && typeof snap.rolesTitle === 'string') {
         rolesSource.textContent = snap.rolesTitle;
       }
@@ -1473,6 +1816,7 @@ document.addEventListener('DOMContentLoaded', function () {
       revealToggle.checked = false;
     }
     closeReveal();
+    closeWheel();
 
     render();
   }
@@ -1493,20 +1837,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Adopt a parsed roles document (from roles.json or an uploaded file).
   // Returns false without touching anything if the shape is wrong.
-  function applyRolesData(data) {
+  function applyRolesData(data, isCustom, preserveGame) {
     if (!data || !Array.isArray(data.roles) || data.roles.length === 0) {
       return false;
     }
 
     roles = data.roles;
+    rolesCustom = !!isCustom;
 
-    // A new role set invalidates anything that referenced the old one
-    picked.left = [];
-    picked.right = [];
-    players.forEach(function (p) {
-      p.lockedRole = null;
-      p.role = null;
-    });
+    // A new role set invalidates anything that referenced the old one. On a
+    // restore we're re-fetching the same default set the saved game was built
+    // on, so keep the picks and assigned roles instead of clearing them.
+    if (!preserveGame) {
+      picked.left = [];
+      picked.right = [];
+      players.forEach(function (p) {
+        p.lockedRole = null;
+        p.role = null;
+      });
+    }
 
     warnMissingPriorities();
 
@@ -1521,8 +1870,10 @@ document.addEventListener('DOMContentLoaded', function () {
     return true;
   }
 
-  function loadRoles() {
-    fetch('roles.json')
+  function loadRoles(preserveGame) {
+    // cache:'no-cache' revalidates so a redeploy of roles.json is picked up
+    // instead of a stale cached copy without the newer fields (e.g. group)
+    fetch('roles.json', { cache: 'no-cache' })
       .then(function (response) {
         if (!response.ok) {
           throw new Error('HTTP ' + response.status);
@@ -1530,7 +1881,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return response.json();
       })
       .then(function (data) {
-        if (!applyRolesData(data)) {
+        if (!applyRolesData(data, false, preserveGame)) {
           showRolesError('roles.json has no non-empty "roles" array.');
         }
       })
@@ -1562,7 +1913,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      if (!applyRolesData(data)) {
+      if (!applyRolesData(data, true)) {
         showRolesError('That JSON needs a non-empty "roles" array.');
       }
 
@@ -1629,6 +1980,7 @@ document.addEventListener('DOMContentLoaded', function () {
     revealMode = revealToggle.checked;
     selectedId = null;
     closeReveal();
+    closeWheel();
 
     render();
   });
@@ -1671,6 +2023,7 @@ document.addEventListener('DOMContentLoaded', function () {
     revealMode = false;
     revealToggle.checked = false;
     closeReveal();
+    closeWheel();
 
     render();
   });
@@ -1705,6 +2058,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Setup-page reset: same clear as New game, reachable before a game starts
+  if (resetAllBtn) {
+    resetAllBtn.addEventListener('click', function () {
+      var ok = (typeof window !== 'undefined' && window.confirm)
+        ? window.confirm('Reset everything? This removes all players and clears ' +
+            'every role choice. The loaded roles and camp names are kept.')
+        : true;
+      if (ok) {
+        newGame();
+      }
+    });
+  }
+
   if (infiltrateCountSelect) {
     infiltrateCountSelect.addEventListener('change', function () {
       var n = parseInt(infiltrateCountSelect.value, 10);
@@ -1734,6 +2100,10 @@ document.addEventListener('DOMContentLoaded', function () {
     render();
   });
 
+  wheelBtn.addEventListener('click', openWheel);
+  wheelSpinBtn.addEventListener('click', spinWheel);
+  wheelCloseBtn.addEventListener('click', closeWheel);
+
   if (rolesFileInput) {
     rolesFileInput.addEventListener('change', handleRolesUpload);
   }
@@ -1746,9 +2116,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   render();
 
-  // Only fetch the default roles when a saved set didn't already supply them
+  // The default set isn't persisted, so fetch it unless an uploaded set was
+  // restored. Preserve any restored game's picks/roles across that fetch.
   if (!restored.roles) {
-    loadRoles();
+    loadRoles(restored.players);
   }
 
 });

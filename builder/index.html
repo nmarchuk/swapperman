@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swapperman — Camp Builder</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Gothic&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="builder.css">
+</head>
+<body>
+
+  <header>
+    <h1>Camp Builder</h1>
+    <p>Build a custom camp JSON for the Swapperman. The Swapperman only hunts at night.</p>
+    <p><a href="../index.html">&larr; Back to the game</a></p>
+  </header>
+
+  <main class="layout">
+
+    <div class="builder">
+
+      <section class="meta">
+        <label>
+          Title
+          <input type="text" id="script-title" value="Custom Script">
+        </label>
+        <label>
+          Author
+          <input type="text" id="script-author" value="">
+        </label>
+      </section>
+
+      <section>
+        <h2>Roles</h2>
+        <div id="roles"></div>
+        <button type="button" id="add-role">+ Add role</button>
+      </section>
+
+      <section class="io">
+        <div class="io-actions">
+          <button type="button" id="export">Export JSON</button>
+          <button type="button" id="download">Download roles.json</button>
+          <button type="button" id="copy">Copy</button>
+          <label class="import">
+            Import JSON
+            <input type="file" id="import-file" accept=".json,application/json">
+          </label>
+        </div>
+        <p class="io-status" id="status"></p>
+        <textarea id="output" spellcheck="false" placeholder="Exported JSON appears here."></textarea>
+      </section>
+
+    </div>
+
+    <aside class="preview">
+      <div class="preview-toolbar">
+        <h2>Preview</h2>
+        <button type="button" id="print">Print / PDF</button>
+        <label class="toolbar-check">
+          <input type="checkbox" id="keep-groups"> Keep groups in one column
+        </label>
+      </div>
+      <div class="sheet-frame">
+        <div class="sheet" id="sheet"></div>
+      </div>
+    </aside>
+
+  </main>
+
+  <script src="builder.js"></script>
+</body>
+</html>

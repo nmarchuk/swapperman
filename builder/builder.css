@@ -1,0 +1,342 @@
+/* Swapperman script builder — deliberately plain: solid borders, no radius,
+   no shadows, no transparency. Styling gets a real pass later. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: 'Special Gothic', system-ui, sans-serif;
+  font-size: 14px;
+  color: #111;
+  background: #fff;
+}
+
+header h1 {
+  margin: 0 0 6px;
+}
+
+header p {
+  margin: 4px 0;
+}
+
+a {
+  color: #0044cc;
+}
+
+main {
+  margin-top: 16px;
+}
+
+/* Builder on the left, printable preview on the right */
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.builder {
+  flex: 1 1 640px;
+  max-width: 720px;
+  min-width: 0;
+}
+
+.preview {
+  flex: 1 1 440px;
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+}
+
+h2 {
+  margin: 20px 0 8px;
+  font-size: 16px;
+}
+
+section {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+}
+
+input[type="text"],
+input[type="number"],
+textarea {
+  display: block;
+  width: 100%;
+  padding: 4px 6px;
+  margin-top: 2px;
+  border: 1px solid #555;
+  font: inherit;
+  color: #111;
+  background: #fff;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  padding: 6px 12px;
+  border: 1px solid #555;
+  background: #eee;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #ddd;
+}
+
+/* Top-level title/author */
+.meta {
+  display: flex;
+  gap: 16px;
+  max-width: 640px;
+}
+
+.meta label {
+  flex: 1;
+}
+
+/* One role per bordered block: name/description on the left, the smaller
+   params stacked in a narrow second column on the right. */
+.role-row {
+  border: 1px solid #999;
+  padding: 10px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 12px;
+  align-items: start;
+}
+
+.role-main .field,
+.role-params .field {
+  margin-bottom: 8px;
+}
+
+.role-params .field:last-of-type {
+  margin-bottom: 10px;
+}
+
+.field-check label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-check input {
+  width: auto;
+}
+
+.remove {
+  border-color: #a00;
+  color: #a00;
+  background: #fff;
+}
+
+.remove:hover {
+  background: #fee;
+}
+
+#add-role {
+  margin-top: 4px;
+}
+
+/* Export / import controls */
+.io-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.import {
+  display: inline-block;
+}
+
+.import input {
+  font: inherit;
+}
+
+.io-status {
+  min-height: 18px;
+  margin: 8px 0;
+}
+
+.io-status.is-error {
+  color: #a00;
+}
+
+#output {
+  width: 100%;
+  min-height: 240px;
+  font-family: Consolas, "Courier New", monospace;
+  white-space: pre;
+}
+
+/* ------------------------------------------------------------------ */
+/* Printable preview sheet                                            */
+/* ------------------------------------------------------------------ */
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.preview-toolbar h2 {
+  margin: 0;
+}
+
+.toolbar-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-check input {
+  width: auto;
+}
+
+/* Scales the true-size sheet down to fit the pane; JS sets its height */
+.sheet-frame {
+  overflow: hidden;
+  border: 1px solid #999;
+  background: #ccc;
+}
+
+/* Laid out at real letter size (8.5in x 11in) so it prints accurately.
+   JS applies a transform: scale() to shrink it on screen. */
+.sheet {
+  width: 8.5in;
+  height: 11in;
+  padding: 0.5in;
+  background: #fff;
+  color: #000;
+  font-family: 'Special Gothic', system-ui, sans-serif;
+  font-size: 13px;
+  transform-origin: top left;
+  /* Print backgrounds/fills too, don't strip them */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-head {
+  text-align: center;
+  border-bottom: 2px solid #000;
+  padding-bottom: 0.1in;
+  margin-bottom: 0.15in;
+}
+
+.sheet-title {
+  font-size: 2em;
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.sheet-author {
+  font-size: 1em;
+  font-style: italic;
+  margin-top: 0.05in;
+}
+
+/* Two newspaper columns that fill top-to-bottom */
+.sheet-body {
+  flex: 1 1 auto;
+  column-count: 2;
+  column-gap: 0.4in;
+  column-fill: auto;
+  overflow: hidden;
+}
+
+/* Numeral divider between groups */
+.sheet-group {
+  break-inside: avoid;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0.12in 0 0.06in;
+}
+
+.sheet-group-block:first-child .sheet-group {
+  margin-top: 0;
+}
+
+/* When enabled, a whole group stays in one column instead of splitting */
+.sheet-body.keep-groups .sheet-group-block {
+  break-inside: avoid;
+}
+
+/* A border (not a background) so it survives print, and 2px so it doesn't
+   round away to nothing when the sheet is scaled down on screen. */
+.sheet-group::before,
+.sheet-group::after {
+  content: "";
+  flex: 1 1 auto;
+  border-top: 2px solid #000;
+}
+
+.sheet-group span {
+  font-weight: bold;
+  font-size: 0.95em;
+}
+
+.sheet-role {
+  break-inside: avoid;
+  margin-bottom: 0.07in;
+  line-height: 1.25;
+}
+
+.sheet-role-name {
+  font-weight: bold;
+}
+
+.sheet-role-name::after {
+  content: ".";
+}
+
+/* ------------------------------------------------------------------ */
+/* Print: only the sheet, at true size                               */
+/* ------------------------------------------------------------------ */
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  body {
+    padding: 0;
+  }
+
+  header,
+  .builder,
+  .preview-toolbar {
+    display: none !important;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sheet-frame {
+    height: auto !important;
+    overflow: visible;
+    border: none;
+    background: none;
+  }
+
+  .sheet {
+    transform: none !important;
+    margin: 0;
+  }
+}

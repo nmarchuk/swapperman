@@ -285,6 +285,196 @@ a:hover {
 .reveal-modal[data-team="right"] .reveal-role { color: var(--color-team-right); }
 
 /* ==========================================================================
+   Team wheel
+
+   A full-screen spinner that deals unassigned players out to the camps. The
+   disc is one conic-gradient; the names and the dividing spokes are separate
+   layers rotated on top of it, so a re-render is just a redraw of children.
+   ========================================================================== */
+
+.wheel-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
+
+  background-color: #05070d;
+
+  /* Whatever the viewport has left once the header and footer are paid for */
+  --wheel-size: min(92vw, calc(100vh - 250px), 880px);
+}
+
+.wheel-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  width: 100%;
+  height: 100%;
+}
+
+.wheel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.wheel-next {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wheel-next-team {
+  color: var(--color-heading);
+}
+
+.wheel-modal[data-team="left"]  .wheel-next-team { color: var(--color-team-left); }
+.wheel-modal[data-team="right"] .wheel-next-team { color: var(--color-team-right); }
+
+/* Square, and as large as the screen allows once the header and footer have
+   taken their share. */
+.wheel-arena {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--wheel-size);
+  height: var(--wheel-size);
+}
+
+.wheel-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+
+  /* Duration must stay in step with WHEEL_SPIN_MS in script.js */
+  transition: transform 8s cubic-bezier(0.15, 0.78, 0.1, 1);
+}
+
+/* Nothing left to hand out */
+.wheel-disc.is-empty {
+  background: var(--color-panel-bg);
+  border-color: var(--color-border);
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  z-index: 2;
+
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-top: 30px solid var(--color-heading);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+}
+
+/* A bar running from the hub to the rim, rotated to its slice. Named so the
+   labels and the spokes can share the geometry. */
+.wheel-label,
+.wheel-spoke {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+/* Block rather than flex: text-overflow only ellipsises a block box, and a
+   line-height matching the height does the vertical centring just as well. */
+.wheel-label {
+  height: 2.4em;
+  margin-top: -1.2em;
+  line-height: 2.4em;
+
+  padding-right: 7%;
+  text-align: right;
+
+  color: #0b1020;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wheel-spoke {
+  height: 0;
+  margin-top: -1px;
+  border-top: 2px solid rgba(5, 7, 13, 0.35);
+}
+
+/* A white wedge over the winning slice, invisible until it is given one. Four
+   pulses at 0.5s is WHEEL_PAUSE_MS in script.js — keep the two in step. */
+.wheel-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wheel-glow.is-on {
+  animation: wheel-glow-pulse 0.5s ease-in-out 4;
+}
+
+@keyframes wheel-glow-pulse {
+  0%, 100% { opacity: 0.1; }
+  50%      { opacity: 0.75; }
+}
+
+.wheel-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.wheel-result {
+  margin: 0;
+  min-height: 1.5em;
+  color: var(--color-heading);
+  font-size: 1.35rem;
+}
+
+.wheel-result[data-team="left"]  { color: var(--color-team-left); }
+.wheel-result[data-team="right"] { color: var(--color-team-right); }
+
+.btn.wheel-spin {
+  padding: 12px 48px;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+}
+
+/* Landscape phones have no height to spare, so drop the header line and let
+   the wheel claim the space it was using. */
+@media (max-height: 560px) {
+  .wheel-modal {
+    --wheel-size: min(92vw, calc(100vh - 150px));
+  }
+
+  .wheel-head {
+    display: none;
+  }
+
+  .wheel-result {
+    font-size: 1.1rem;
+  }
+}
+
+/* ==========================================================================
    Panels
    ========================================================================== */
 
@@ -528,7 +718,6 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 260px;
   overflow-y: auto;
 }
 
@@ -541,6 +730,29 @@ a:hover {
   border-radius: 5px;
   cursor: pointer;
   background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Thin rule between role groups, with the group's Roman numeral centered on it */
+.role-group-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 2px;
+}
+
+.role-group-divider::before,
+.role-group-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.role-group-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  opacity: 0.8;
 }
 
 .role-option:hover:not(.is-disabled) {
@@ -579,10 +791,8 @@ a:hover {
 /* Clamped to one line — full text is in the row's tooltip */
 .role-desc {
   display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
   -webkit-box-orient: vertical;
-  overflow: hidden;
+  overflow: auto;
 
   color: var(--color-muted);
   font-size: 0.75rem;

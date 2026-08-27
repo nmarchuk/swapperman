@@ -55,6 +55,7 @@
           <button type="button" class="btn assign-btn assign-right" id="assign-right" disabled>
             Assign to <span class="assign-label" id="assign-right-label">Camp Green</span>
           </button>
+          <button type="button" class="btn btn-secondary" id="wheel-btn" disabled>Wheel</button>
         </div>
 
       </section>
@@ -70,6 +71,7 @@
           <!-- Dev only: safe to comment out this button, the script handles its absence -->
           <button type="button" class="btn btn-secondary" id="load-test" disabled>Load 6-player test game</button>
           <!-- /Dev only -->
+          <button type="button" class="btn btn-secondary" id="reset-all">Reset all</button>
           <button type="button" class="btn btn-start" id="start-game" disabled>Start game</button>
         </div>
       </div>
@@ -177,6 +179,29 @@
       <p class="reveal-role" id="reveal-role"></p>
       <p class="reveal-desc" id="reveal-desc"></p>
       <p class="reveal-close-hint">Press any key or click to close</p>
+    </div>
+  </div>
+
+  <div class="wheel-modal" id="wheel-modal" role="dialog" aria-modal="true" aria-label="Team wheel" hidden>
+    <div class="wheel-stage">
+
+      <div class="wheel-head">
+        <p class="wheel-next" id="wheel-next">
+          Next pick joins <span class="wheel-next-team" id="wheel-next-team">Camp Yellow</span>
+        </p>
+        <button type="button" class="btn btn-secondary wheel-close" id="wheel-close">Close</button>
+      </div>
+
+      <div class="wheel-arena">
+        <div class="wheel-pointer" aria-hidden="true"></div>
+        <div class="wheel-disc" id="wheel-disc"></div>
+      </div>
+
+      <div class="wheel-foot">
+        <p class="wheel-result" id="wheel-result" aria-live="polite"></p>
+        <button type="button" class="btn wheel-spin" id="wheel-spin">SPIN</button>
+      </div>
+
     </div>
   </div>
 
