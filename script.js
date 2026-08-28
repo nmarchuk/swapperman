@@ -22,40 +22,90 @@ document.addEventListener('DOMContentLoaded', function () {
   // one-way: once a player is on a team they can only be deleted.
   var selectedId = null;
 
+  // Camps in play: two by default, three when the switch above the roster is
+  // flipped. The third camp turns a two-way swap into a rotation, since three
+  // players from three camps can move round the ring either way.
+  var teamCount = 2;
+
+  // Every camp the page has markup for, in the order they sit on screen.
+  var ALL_TEAMS = ['left', 'middle', 'right'];
+
+  // Everything that walks the camps goes through this, so in a two-camp game
+  // the middle camp simply isn't there.
+  function activeTeams() {
+    return teamCount === 3 ? ALL_TEAMS : ['left', 'right'];
+  }
+
+  function isActiveTeam(team) {
+    return activeTeams().indexOf(team) !== -1;
+  }
+
+  // Next camp round the ring. dir is 1 for clockwise — left, middle, right and
+  // back to left, the order they're laid out — and -1 for the other way. With
+  // two camps either direction just gives the other camp.
+  function stepTeam(team, dir) {
+    var order = activeTeams();
+    var at = order.indexOf(team);
+    if (at === -1) {
+      return team;
+    }
+    return order[(at + dir + order.length) % order.length];
+  }
+
+  function otherTeams(team) {
+    return activeTeams().filter(function (t) {
+      return t !== team;
+    });
+  }
+
   var form = document.getElementById('player-form');
   var input = document.getElementById('player-input');
   var empty = document.getElementById('players-empty');
 
   var grids = {
     left: document.getElementById('left-grid'),
+    middle: document.getElementById('middle-grid'),
     none: document.getElementById('none-grid'),
     right: document.getElementById('right-grid')
   };
 
   var counts = {
     left: document.getElementById('left-count'),
+    middle: document.getElementById('middle-count'),
     right: document.getElementById('right-count')
   };
 
   var teamNames = {
     left: document.getElementById('team-left-name'),
+    middle: document.getElementById('team-middle-name'),
     right: document.getElementById('team-right-name')
   };
 
   var campTotals = {
     left: document.getElementById('left-total'),
+    middle: document.getElementById('middle-total'),
     right: document.getElementById('right-total')
   };
 
   var assignButtons = {
     left: document.getElementById('assign-left'),
+    middle: document.getElementById('assign-middle'),
     right: document.getElementById('assign-right')
   };
 
   var assignLabels = {
     left: document.getElementById('assign-left-label'),
+    middle: document.getElementById('assign-middle-label'),
     right: document.getElementById('assign-right-label')
   };
+
+  // Third-camp markup that is shown or hidden with the camp count
+  var middlePanel = document.getElementById('team-middle-panel');
+  var middleRolesColumn = document.getElementById('roles-middle-column');
+
+  var campCountButtons = Array.prototype.slice.call(
+    document.querySelectorAll('#camp-count .camp-count-btn')
+  );
 
   // ==========================================================================
   // Roles
@@ -69,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Role names picked per camp, in click order. Arrays rather than Sets so
   // that shrinking a camp can drop the most recent picks first.
-  var picked = { left: [], right: [] };
+  var picked = { left: [], middle: [], right: [] };
 
   var rolesStatus = document.getElementById('roles-status');
   var rolesColumns = document.getElementById('roles-columns');
@@ -78,16 +128,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var roleLists = {
     left: document.getElementById('roles-left-list'),
+    middle: document.getElementById('roles-middle-list'),
     right: document.getElementById('roles-right-list')
   };
 
   var roleProgress = {
     left: document.getElementById('roles-left-progress'),
+    middle: document.getElementById('roles-middle-progress'),
     right: document.getElementById('roles-right-progress')
   };
 
   var roleTeamNames = {
     left: document.getElementById('roles-left-name'),
+    middle: document.getElementById('roles-middle-name'),
     right: document.getElementById('roles-right-name')
   };
 
@@ -123,6 +176,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var clearActionsBtn = document.getElementById('clear-actions');
   var endRoastBtn = document.getElementById('end-roasting');
   var swapBtn = document.getElementById('swap-camps');
+  var rotateCwBtn = document.getElementById('rotate-cw');
+  var rotateCcwBtn = document.getElementById('rotate-ccw');
 
   var nightPanel = document.getElementById('night-order');
   var nightList = document.getElementById('night-list');
@@ -191,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function assignSelected(team) {
     var player = playerById(selectedId);
-    if (player) {
+    if (player && isActiveTeam(team)) {
       assignPlayer(player, team);
     }
     selectedId = null;
@@ -203,13 +258,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // One player per camp is secretly loyal to the opposite camp. Re-running
-  // redraws both, so everyone resets to their own camp first.
+  // Some players in each camp are secretly loyal to another camp. Re-running
+  // redraws them all, so everyone resets to their own camp first.
   function assignInfiltrators(count) {
     // Default to one so existing callers (e.g. the test fixture) are unaffected
     count = (typeof count === 'number' && count > 0) ? count : 1;
 
-    ['left', 'right'].forEach(function (team) {
+    activeTeams().forEach(function (team) {
       var roster = teamPlayers(team);
       if (!roster.length) {
         return;
@@ -221,14 +276,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Can't have more moles than the camp has players
       var n = Math.min(count, roster.length);
-      shuffle(roster).slice(0, n).forEach(function (mole) {
-        mole.alignment = otherTeam(team);
+      // With three camps a camp's moles are dealt round the other two rather
+      // than all defecting to the same place. Shuffled so which camp gets the
+      // odd one out isn't fixed.
+      var targets = shuffle(otherTeams(team));
+
+      shuffle(roster).slice(0, n).forEach(function (mole, i) {
+        mole.alignment = targets[i % targets.length];
       });
     });
   }
 
-  // Ids picked for a camp swap during play (at most two)
+  // Ids picked for a camp move during play. Two players from different camps
+  // trade places; with three camps in play, three players from three camps can
+  // instead rotate round the ring.
   var swapSelection = [];
+
+  function maxSwapPicks() {
+    return teamCount === 3 ? 3 : 2;
+  }
 
   function playerById(id) {
     return players.find(function (p) {
@@ -244,21 +310,40 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Keep the most recent two picks
+    // Keep the most recent picks, dropping the oldest once the cap is hit
     swapSelection.push(id);
-    if (swapSelection.length > 2) {
+    while (swapSelection.length > maxSwapPicks()) {
       swapSelection.shift();
     }
   }
 
-  // Two players, one from each camp
-  function canSwap() {
-    if (swapSelection.length !== 2) {
-      return false;
+  // True only when every pick is seated and no two share a camp — the shape
+  // both a swap and a rotation need. Returns null otherwise.
+  function selectionTeams() {
+    var seen = [];
+
+    for (var i = 0; i < swapSelection.length; i++) {
+      var p = playerById(swapSelection[i]);
+      if (!p || p.team === null || seen.indexOf(p.team) !== -1) {
+        return null;
+      }
+      seen.push(p.team);
     }
-    var a = playerById(swapSelection[0]);
-    var b = playerById(swapSelection[1]);
-    return !!a && !!b && a.team !== null && b.team !== null && a.team !== b.team;
+
+    return seen;
+  }
+
+  // Two players, one from each of two camps
+  function canSwap() {
+    return swapSelection.length === 2 && selectionTeams() !== null;
+  }
+
+  // Three camps in play and one player picked in each — the only shape a
+  // three-way rotation makes sense for.
+  function canRotate() {
+    return teamCount === 3 &&
+      swapSelection.length === 3 &&
+      selectionTeams() !== null;
   }
 
   // Trades the two players' camps. Alignment is untouched — where someone
@@ -279,6 +364,42 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     swapSelection = [];
+  }
+
+  // Moves each of the three picked players one camp round the ring, so all
+  // three land somewhere new in a single step. Like a two-way swap, alignment
+  // is untouched — only where they sit changes.
+  function rotateSelected(dir) {
+    var moving = swapSelection.map(function (id) {
+      return playerById(id);
+    });
+
+    // Read every destination before moving anyone, or the second player would
+    // be stepped on from a camp they had already been shifted into.
+    var destinations = moving.map(function (p) {
+      return stepTeam(p.team, dir);
+    });
+
+    moving.forEach(function (p, i) {
+      p.team = destinations[i];
+      if (!p.history) {
+        p.history = [];
+      }
+      p.history.push({ type: 'swap', team: p.team });
+    });
+
+    swapSelection = [];
+  }
+
+  // "Camp Yellow → Camp Purple → Camp Green → Camp Yellow", so a rotate button
+  // spells out which way the players actually move rather than leaving the
+  // arrow glyph to be interpreted.
+  function rotationLabel(dir) {
+    var order = activeTeams();
+    var names = (dir === 1 ? order : order.slice().reverse()).map(function (team) {
+      return campName(team);
+    });
+    return names.concat(names[0]).join(' → ');
   }
 
   function marshmallowsOf(player) {
@@ -337,28 +458,46 @@ document.addEventListener('DOMContentLoaded', function () {
     nextId = 1;
     selectedId = null;
 
+    var camps = activeTeams();
+
     TEST_NAMES.forEach(function (name, i) {
       addPlayer(name);
       var p = players[players.length - 1];
-      p.team = i < 3 ? 'left' : 'right';
+      // Round-robin, so six names come out three-a-side or two-a-side
+      p.team = camps[i % camps.length];
       p.alignment = p.team;
     });
 
-    // Six distinct roles, three per camp
-    var chosen = shuffle(roles).slice(0, 6).map(function (r) {
+    // One distinct role per player, dealt out camp by camp
+    var chosen = shuffle(roles).slice(0, TEST_NAMES.length).map(function (r) {
       return r.name;
     });
-    picked.left = chosen.slice(0, 3);
-    picked.right = chosen.slice(3, 6);
+    camps.forEach(function (team) {
+      picked[team] = chosen.splice(0, teamSize(team));
+    });
 
     autoAssign();
     assignInfiltrators();
   }
 
+  // Head count of every camp in play, in display order
+  function campSizes() {
+    return activeTeams().map(function (team) {
+      return teamSize(team);
+    });
+  }
+
   // Everyone on a camp has a role in hand
   // Camps must be within one player of each other — no lopsided games
   function campsBalanced() {
-    return Math.abs(teamSize('left') - teamSize('right')) <= 1;
+    var sizes = campSizes();
+    return Math.max.apply(null, sizes) - Math.min.apply(null, sizes) <= 1;
+  }
+
+  function everyCampStaffed() {
+    return campSizes().every(function (n) {
+      return n > 0;
+    });
   }
 
   function readyToStart() {
@@ -366,8 +505,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return p.team !== null;
     });
     return seated.length > 0 &&
-      teamSize('left') > 0 &&
-      teamSize('right') > 0 &&
+      everyCampStaffed() &&
       campsBalanced() &&
       seated.every(function (p) {
         return p.role !== null;
@@ -379,19 +517,42 @@ document.addEventListener('DOMContentLoaded', function () {
     if (readyToStart()) {
       return '';
     }
-    if (teamSize('left') === 0 || teamSize('right') === 0) {
-      return 'Both camps need at least one player.';
+    if (!everyCampStaffed()) {
+      return 'Every camp needs at least one player.';
     }
     if (!campsBalanced()) {
       return 'Camps must be equal, or differ by at most one player (' +
-        teamSize('left') + ' vs ' + teamSize('right') + ').';
+        campSizes().join(' vs ') + ').';
     }
     return 'Every player on a camp needs a role.';
   }
 
   // Single owner of what's on screen. Reveal mode is a setup-phase tool only —
   // it can't be reached once the game starts.
+  // Shows or hides everything belonging to the third camp, and tells the
+  // stylesheet how many column tracks the team and role grids need.
+  function applyCampCount() {
+    var three = teamCount === 3;
+
+    document.body.dataset.camps = String(teamCount);
+
+    middlePanel.hidden = !three;
+    middleRolesColumn.hidden = !three;
+    assignButtons.middle.hidden = !three;
+
+    rotateCwBtn.hidden = !three;
+    rotateCcwBtn.hidden = !three;
+
+    campCountButtons.forEach(function (btn) {
+      btn.classList.toggle('is-active', btn.dataset.count === String(teamCount));
+      // Re-shaping the camps mid-game would strand players, so it's setup-only
+      btn.disabled = phase !== 'setup';
+    });
+  }
+
   function applyView() {
+    applyCampCount();
+
     var setupVisible = phase === 'setup' && !revealMode;
 
     setupPanel.hidden = !setupVisible;
@@ -407,13 +568,13 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function canAssignInfiltrators() {
-    return teamSize('left') > 0 && teamSize('right') > 0;
+    return everyCampStaffed();
   }
 
   // A camp can't hold more infiltrators than it has players, so the ceiling is
-  // set by the smaller camp.
+  // set by the smallest camp.
   function maxInfiltrators() {
-    return Math.min(teamSize('left'), teamSize('right'));
+    return Math.min.apply(null, campSizes());
   }
 
   function infiltratorsIn(team) {
@@ -431,20 +592,29 @@ document.addEventListener('DOMContentLoaded', function () {
   // One line describing the current infiltrator spread, for the camp-tools bar
   function infiltratorHint() {
     if (!canAssignInfiltrators()) {
-      return 'Both camps need at least one player.';
+      return 'Every camp needs at least one player.';
     }
     if (!hasInfiltrators()) {
       return 'Everyone is loyal to their own camp.';
     }
 
-    var left = infiltratorsIn('left');
-    var right = infiltratorsIn('right');
-    if (left === right) {
-      return left + ' player' + (left === 1 ? '' : 's') +
-        ' in each camp loyal to the other side.';
+    var camps = activeTeams();
+    var spread = camps.map(function (team) {
+      return infiltratorsIn(team);
+    });
+
+    var even = spread.every(function (n) {
+      return n === spread[0];
+    });
+
+    if (even) {
+      return spread[0] + ' player' + (spread[0] === 1 ? '' : 's') +
+        ' in each camp loyal to another side.';
     }
-    return left + ' loyal to the other side on the left, ' +
-      right + ' on the right.';
+
+    return camps.map(function (team, i) {
+      return spread[i] + ' in ' + campName(team);
+    }).join(', ') + ' loyal to another side.';
   }
 
   // Rebuilds the count dropdown to offer 1..max, clamped to what the current
@@ -1044,15 +1214,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function render() {
-    var tally = { left: 0, none: 0, right: 0 };
+    var tally = { left: 0, middle: 0, none: 0, right: 0 };
 
-    // Settle role state first so the cards below render from clean data
+    // Settle roster and role state first so the cards below render clean data
+    evictInactiveCamps();
     trimPicks();
     pruneRoleState();
 
-    grids.left.textContent = '';
     grids.none.textContent = '';
-    grids.right.textContent = '';
+    ALL_TEAMS.forEach(function (team) {
+      grids[team].textContent = '';
+    });
 
     players.forEach(function (player) {
       var k = key(player.team);
@@ -1060,18 +1232,16 @@ document.addEventListener('DOMContentLoaded', function () {
       tally[k]++;
     });
 
-    counts.left.textContent = tally.left;
-    counts.right.textContent = tally.right;
-
-    ['left', 'right'].forEach(function (team) {
+    // Every camp with markup is kept current, in play or not, so nothing stale
+    // is left behind the moment the third camp is switched back on.
+    ALL_TEAMS.forEach(function (team) {
+      counts[team].textContent = tally[team];
       campTotals[team].textContent = campMarshmallows(team);
       campTotals[team].hidden = phase !== 'playing';
+      assignButtons[team].disabled = selectedId === null || revealMode;
     });
 
     empty.hidden = players.length > 0;
-
-    assignButtons.left.disabled = selectedId === null || revealMode;
-    assignButtons.right.disabled = selectedId === null || revealMode;
     // Nothing to spin for once everyone has a camp
     wheelBtn.disabled = revealMode || unassignedPlayers().length === 0;
 
@@ -1088,6 +1258,11 @@ document.addEventListener('DOMContentLoaded', function () {
     clearActionsBtn.disabled = decided === 0;
     endRoastBtn.disabled = decided < seated;
     swapBtn.disabled = !canSwap();
+
+    rotateCwBtn.disabled = !canRotate();
+    rotateCcwBtn.disabled = !canRotate();
+    rotateCwBtn.title = 'Clockwise — ' + rotationLabel(1);
+    rotateCcwBtn.title = 'Counter-clockwise — ' + rotationLabel(-1);
     gameBarText.textContent = 'Game in progress — ' + decided + ' of ' + seated + ' chosen.';
 
     startBtn.disabled = !readyToStart();
@@ -1115,23 +1290,37 @@ document.addEventListener('DOMContentLoaded', function () {
     }).length;
   }
 
-  function otherTeam(team) {
-    return team === 'left' ? 'right' : 'left';
-  }
+  var DEFAULT_CAMP_NAMES = {
+    left: 'Left camp',
+    middle: 'Middle camp',
+    right: 'Right camp'
+  };
 
   function campName(team) {
-    if (team !== 'left' && team !== 'right') {
+    if (ALL_TEAMS.indexOf(team) === -1) {
       return 'nobody';
     }
-    return teamNames[team].value.trim() ||
-      (team === 'left' ? 'Left camp' : 'Right camp');
+    return teamNames[team].value.trim() || DEFAULT_CAMP_NAMES[team];
+  }
+
+  // A player can only sit in a camp that's in play, so dropping back to two
+  // camps sends anyone in the middle to the unassigned row.
+  function evictInactiveCamps() {
+    players.forEach(function (p) {
+      if (p.team !== null && !isActiveTeam(p.team)) {
+        p.team = null;
+      }
+    });
   }
 
   // A camp can hold exactly as many roles as it has players, so removing
-  // players has to drop picks that no longer fit.
+  // players has to drop picks that no longer fit. Camps out of play hold no
+  // picks at all.
   function trimPicks() {
-    ['left', 'right'].forEach(function (team) {
-      picked[team] = picked[team].slice(0, teamSize(team));
+    ALL_TEAMS.forEach(function (team) {
+      picked[team] = isActiveTeam(team)
+        ? picked[team].slice(0, teamSize(team))
+        : [];
     });
   }
 
@@ -1147,11 +1336,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (picked[team].length >= teamSize(team)) {
       return;
     }
-    if (picked[otherTeam(team)].indexOf(roleName) !== -1) {
+    if (roleTakenByAnotherCamp(team, roleName)) {
       return;
     }
 
     picked[team].push(roleName);
+  }
+
+  // A role is dealt out by at most one camp, so every other camp in play has
+  // a claim on it that blocks this one.
+  function roleTakenByAnotherCamp(team, roleName) {
+    return otherTeams(team).some(function (other) {
+      return picked[other].indexOf(roleName) !== -1;
+    });
   }
 
   var ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -1173,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function buildRoleOption(team, role) {
     var isPicked = picked[team].indexOf(role.name) !== -1;
-    var takenByOther = picked[otherTeam(team)].indexOf(role.name) !== -1;
+    var takenByOther = roleTakenByAnotherCamp(team, role.name);
     var full = picked[team].length >= teamSize(team);
     var disabled = takenByOther || (full && !isPicked);
 
@@ -1242,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       // A player on a camp always has some alignment; default is their own
-      if (p.alignment !== 'left' && p.alignment !== 'right') {
+      if (!isActiveTeam(p.alignment)) {
         p.alignment = p.team;
       }
 
@@ -1268,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    ['left', 'right'].forEach(function (team) {
+    activeTeams().forEach(function (team) {
       var seen = [];
       teamPlayers(team).forEach(function (p) {
         if (!p.lockedRole) {
@@ -1285,7 +1482,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Every camp has players and exactly enough roles picked to cover them
   function readyToAssign() {
-    return ['left', 'right'].every(function (team) {
+    return activeTeams().every(function (team) {
       return teamSize(team) > 0 && picked[team].length === teamSize(team);
     });
   }
@@ -1309,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Locked players keep their pick; everyone else gets what's left, shuffled.
   function autoAssign() {
-    ['left', 'right'].forEach(function (team) {
+    activeTeams().forEach(function (team) {
       var roster = teamPlayers(team);
       var taken = [];
 
@@ -1348,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', function () {
       assignHint.textContent = 'Ready to assign.';
     } else {
       assignHint.textContent =
-        'Both camps need players and exactly enough roles chosen to cover them.';
+        'Every camp needs players and exactly enough roles chosen to cover them.';
     }
   }
 
@@ -1365,7 +1562,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return (a.group || 0) - (b.group || 0);
     });
 
-    ['left', 'right'].forEach(function (team) {
+    activeTeams().forEach(function (team) {
       var list = roleLists[team];
 
       // Rebuilding resets scroll, which is jarring in a long list
@@ -1395,14 +1592,22 @@ document.addEventListener('DOMContentLoaded', function () {
   // Team wheel
   //
   // A full-screen spinner that deals the unassigned players out to the camps,
-  // one spin at a time. Every unassigned player gets an equal slice; the camp
-  // a winner lands in alternates on each spin, so the two stay level.
+  // one spin at a time. Every unassigned player gets an equal slice, and each
+  // winner joins whichever camp is furthest behind, so two or three camps all
+  // come out level.
   //
   // Geometry: slice 0 starts at 12 o'clock and they run clockwise, which is
   // exactly how conic-gradient lays its stops out. The pointer sits at 12
   // o'clock too, so a slice at clockwise angle `a` is under the pointer once
   // the disc has been rotated by −a.
   // ==========================================================================
+
+  // The camp with the fewest players, earliest in display order on a tie
+  function leastFilledTeam() {
+    return activeTeams().reduce(function (best, team) {
+      return teamSize(team) < teamSize(best) ? team : best;
+    });
+  }
 
   var wheelBtn = document.getElementById('wheel-btn');
   var wheelModal = document.getElementById('wheel-modal');
@@ -1419,7 +1624,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // redrawn without them. Matches the .wheel-glow pulse in styles.css.
   var WHEEL_PAUSE_MS = 2000;
 
-  // Camp the next winner joins. Flips after every spin.
+  // Camp the next winner joins. Moves to whichever camp is furthest behind
+  // after every spin.
   var wheelTeam = 'left';
   // Player ids in slice order, i.e. what the disc currently shows
   var wheelOrder = [];
@@ -1571,9 +1777,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
       wheelSpinning = false;
 
-      var team = wheelTeam;
-      assignPlayer(player, team);
-      wheelTeam = otherTeam(team);
+      assignPlayer(player, wheelTeam);
+      wheelTeam = leastFilledTeam();
 
       renderWheel();
       render();
@@ -1649,9 +1854,9 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Start with whichever camp is behind, so alternating from there leaves
-    // the two within a player of each other however many names are in play.
-    wheelTeam = teamSize('left') <= teamSize('right') ? 'left' : 'right';
+    // Always deal to the camp that's furthest behind, which leaves them all
+    // within a player of each other however many names are in play.
+    wheelTeam = leastFilledTeam();
 
     // Back to a known angle without animating the trip there
     wheelSpinning = false;
@@ -1695,13 +1900,15 @@ document.addEventListener('DOMContentLoaded', function () {
         phase: phase,
         players: players,
         nextId: nextId,
-        picked: { left: picked.left, right: picked.right },
+        picked: { left: picked.left, middle: picked.middle, right: picked.right },
+        teamCount: teamCount,
         infiltratorCount: infiltratorCount,
         roles: roles,
         rolesCustom: rolesCustom,
         rolesTitle: rolesSource ? rolesSource.textContent : '',
         teamNames: {
           left: teamNames.left ? teamNames.left.value : '',
+          middle: teamNames.middle ? teamNames.middle.value : '',
           right: teamNames.right ? teamNames.right.value : ''
         }
       }));
@@ -1716,8 +1923,8 @@ document.addEventListener('DOMContentLoaded', function () {
     return {
       id: p.id,
       name: p.name,
-      team: (p.team === 'left' || p.team === 'right') ? p.team : null,
-      alignment: (p.alignment === 'left' || p.alignment === 'right') ? p.alignment : null,
+      team: ALL_TEAMS.indexOf(p.team) !== -1 ? p.team : null,
+      alignment: ALL_TEAMS.indexOf(p.alignment) !== -1 ? p.alignment : null,
       lockedRole: p.lockedRole || null,
       role: p.role || null,
       action: (p.action === 'roast' || p.action === 'burn') ? p.action : null,
@@ -1771,6 +1978,10 @@ document.addEventListener('DOMContentLoaded', function () {
       result.roles = true;
     }
 
+    // Camp count is configuration rather than part of the roster, so it comes
+    // back whether or not there's a saved game behind it.
+    teamCount = snap.teamCount === 3 ? 3 : 2;
+
     // Only restore a game when there's an actual roster to bring back
     if (Array.isArray(snap.players) && snap.players.length) {
       players = snap.players.map(normalizePlayer);
@@ -1779,17 +1990,17 @@ document.addEventListener('DOMContentLoaded', function () {
         : players.reduce(function (m, p) { return Math.max(m, p.id); }, 0) + 1;
       phase = (snap.phase === 'playing') ? 'playing' : 'setup';
       if (snap.picked) {
-        picked.left = Array.isArray(snap.picked.left) ? snap.picked.left : [];
-        picked.right = Array.isArray(snap.picked.right) ? snap.picked.right : [];
+        ALL_TEAMS.forEach(function (team) {
+          picked[team] = Array.isArray(snap.picked[team]) ? snap.picked[team] : [];
+        });
       }
       infiltratorCount = typeof snap.infiltratorCount === 'number' ? snap.infiltratorCount : 1;
       if (snap.teamNames) {
-        if (teamNames.left && typeof snap.teamNames.left === 'string') {
-          teamNames.left.value = snap.teamNames.left;
-        }
-        if (teamNames.right && typeof snap.teamNames.right === 'string') {
-          teamNames.right.value = snap.teamNames.right;
-        }
+        ALL_TEAMS.forEach(function (team) {
+          if (teamNames[team] && typeof snap.teamNames[team] === 'string') {
+            teamNames[team].value = snap.teamNames[team];
+          }
+        });
       }
       result.players = true;
     }
@@ -1798,12 +2009,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Full clean slate: empty roster, no assignments, back to setup. The loaded
-  // roles list and team names are kept (those are configuration, not a game).
+  // roles list, camp count and team names are kept (those are configuration,
+  // not a game).
   function newGame() {
     players = [];
     nextId = 1;
-    picked.left = [];
-    picked.right = [];
+    ALL_TEAMS.forEach(function (team) {
+      picked[team] = [];
+    });
 
     phase = 'setup';
     selectedId = null;
@@ -1823,10 +2036,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Mirror a team-name input onto the assign button and role heading
   function syncTeamName(team) {
-    var name = teamNames[team].value.trim() ||
-      (team === 'left' ? 'Left team' : 'Right team');
+    var name = campName(team);
     assignLabels[team].textContent = name;
     roleTeamNames[team].textContent = name;
+  }
+
+  // Switching the camp count re-shapes the roster, so it belongs to setup.
+  // Dropping to two camps strands whoever is sitting in the middle, which the
+  // render below returns to the unassigned row.
+  function setTeamCount(n) {
+    if (phase !== 'setup' || n === teamCount) {
+      return;
+    }
+
+    var stranded = teamPlayers('middle').length;
+
+    if (n === 2 && stranded) {
+      var ok = (typeof window !== 'undefined' && window.confirm)
+        ? window.confirm('Drop to two camps? The ' + stranded + ' player' +
+            (stranded === 1 ? '' : 's') + ' in ' + campName('middle') +
+            ' go back to unassigned.')
+        : true;
+      if (!ok) {
+        return;
+      }
+    }
+
+    teamCount = n;
+
+    selectedId = null;
+    swapSelection = [];
+    closeWheel();
+
+    render();
   }
 
   function showRolesError(message) {
@@ -1959,7 +2201,7 @@ document.addEventListener('DOMContentLoaded', function () {
     render();
   });
 
-  ['left', 'right'].forEach(function (team) {
+  ALL_TEAMS.forEach(function (team) {
     assignButtons[team].addEventListener('click', function () {
       if (selectedId === null) {
         return;
@@ -2036,6 +2278,19 @@ document.addEventListener('DOMContentLoaded', function () {
     render();
   });
 
+  [
+    { btn: rotateCwBtn, dir: 1 },
+    { btn: rotateCcwBtn, dir: -1 }
+  ].forEach(function (turn) {
+    turn.btn.addEventListener('click', function () {
+      if (!canRotate()) {
+        return;
+      }
+      rotateSelected(turn.dir);
+      render();
+    });
+  });
+
   endRoastBtn.addEventListener('click', function () {
     endRoastingPhase();
     render();
@@ -2100,6 +2355,12 @@ document.addEventListener('DOMContentLoaded', function () {
     render();
   });
 
+  campCountButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setTeamCount(parseInt(btn.dataset.count, 10));
+    });
+  });
+
   wheelBtn.addEventListener('click', openWheel);
   wheelSpinBtn.addEventListener('click', spinWheel);
   wheelCloseBtn.addEventListener('click', closeWheel);
@@ -2111,8 +2372,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Bring back an in-progress game if one was left open, then reflect any
   // restored team names on the mirrored labels.
   var restored = restoreState();
-  syncTeamName('left');
-  syncTeamName('right');
+  ALL_TEAMS.forEach(syncTeamName);
 
   render();
 

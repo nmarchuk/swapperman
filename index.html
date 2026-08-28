@@ -32,7 +32,14 @@
       </div>
 
       <section id="setup" class="panel">
-        <h2>Players</h2>
+        <div class="setup-head">
+          <h2>Players</h2>
+          <div class="camp-count" id="camp-count" role="group" aria-label="Number of camps">
+            <span class="camp-count-label">Camps</span>
+            <button type="button" class="camp-count-btn is-active" data-count="2">2</button>
+            <button type="button" class="camp-count-btn" data-count="3">3</button>
+          </div>
+        </div>
 
         <form class="player-form" id="player-form">
           <input
@@ -51,6 +58,9 @@
         <div class="assign-bar">
           <button type="button" class="btn assign-btn assign-left" id="assign-left" disabled>
             Assign to <span class="assign-label" id="assign-left-label">Camp Yellow</span>
+          </button>
+          <button type="button" class="btn assign-btn assign-middle" id="assign-middle" hidden disabled>
+            Assign to <span class="assign-label" id="assign-middle-label">Camp Purple</span>
           </button>
           <button type="button" class="btn assign-btn assign-right" id="assign-right" disabled>
             Assign to <span class="assign-label" id="assign-right-label">Camp Green</span>
@@ -80,6 +90,8 @@
         <p class="game-bar-text" id="game-bar-text">Game in progress.</p>
         <div class="game-bar-actions">
           <button type="button" class="btn" id="swap-camps" disabled>Swap camps</button>
+          <button type="button" class="btn" id="rotate-cw" hidden disabled>Rotate &#8635;</button>
+          <button type="button" class="btn" id="rotate-ccw" hidden disabled>Rotate &#8634;</button>
           <button type="button" class="btn" id="end-roasting" disabled>End roasting phase</button>
           <button type="button" class="btn btn-secondary" id="clear-actions" disabled>Clear choices</button>
           <button type="button" class="btn btn-secondary" id="new-game">New game</button>
@@ -101,6 +113,21 @@
             <span class="team-total" id="left-total" hidden>0</span>
           </div>
           <div class="team-grid" id="left-grid"></div>
+        </section>
+
+        <section class="panel team-panel team-middle" id="team-middle-panel" hidden>
+          <input
+            type="text"
+            class="team-name"
+            id="team-middle-name"
+            value="Camp Purple"
+            aria-label="Middle team name"
+            maxlength="20">
+          <div class="team-head">
+            <p class="team-count"><span id="middle-count">0</span> players</p>
+            <span class="team-total" id="middle-total" hidden>0</span>
+          </div>
+          <div class="team-grid" id="middle-grid"></div>
         </section>
 
         <section class="panel team-panel team-right">
@@ -139,6 +166,14 @@
               <span class="roles-progress" id="roles-left-progress">0 / 0</span>
             </h3>
             <div class="role-list" id="roles-left-list"></div>
+          </div>
+
+          <div class="roles-column" id="roles-middle-column" hidden>
+            <h3 class="roles-heading roles-heading-middle">
+              <span id="roles-middle-name">Camp Purple</span>
+              <span class="roles-progress" id="roles-middle-progress">0 / 0</span>
+            </h3>
+            <div class="role-list" id="roles-middle-list"></div>
           </div>
 
           <div class="roles-column">

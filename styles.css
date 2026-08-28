@@ -29,6 +29,7 @@
 
   /* Teams */
   --color-team-left: #e6c53f;
+  --color-team-middle: #b07fe8;
   --color-team-right: #4caf72;
 
   /* Type */
@@ -281,8 +282,9 @@ a:hover {
 }
 
 /* Camp color on the revealed role */
-.reveal-modal[data-team="left"]  .reveal-role { color: var(--color-team-left); }
-.reveal-modal[data-team="right"] .reveal-role { color: var(--color-team-right); }
+.reveal-modal[data-team="left"]   .reveal-role { color: var(--color-team-left); }
+.reveal-modal[data-team="middle"] .reveal-role { color: var(--color-team-middle); }
+.reveal-modal[data-team="right"]  .reveal-role { color: var(--color-team-right); }
 
 /* ==========================================================================
    Team wheel
@@ -337,8 +339,9 @@ a:hover {
   color: var(--color-heading);
 }
 
-.wheel-modal[data-team="left"]  .wheel-next-team { color: var(--color-team-left); }
-.wheel-modal[data-team="right"] .wheel-next-team { color: var(--color-team-right); }
+.wheel-modal[data-team="left"]   .wheel-next-team { color: var(--color-team-left); }
+.wheel-modal[data-team="middle"] .wheel-next-team { color: var(--color-team-middle); }
+.wheel-modal[data-team="right"]  .wheel-next-team { color: var(--color-team-right); }
 
 /* Square, and as large as the screen allows once the header and footer have
    taken their share. */
@@ -449,8 +452,9 @@ a:hover {
   font-size: 1.35rem;
 }
 
-.wheel-result[data-team="left"]  { color: var(--color-team-left); }
-.wheel-result[data-team="right"] { color: var(--color-team-right); }
+.wheel-result[data-team="left"]   { color: var(--color-team-left); }
+.wheel-result[data-team="middle"] { color: var(--color-team-middle); }
+.wheel-result[data-team="right"]  { color: var(--color-team-right); }
 
 .btn.wheel-spin {
   padding: 12px 48px;
@@ -584,6 +588,62 @@ a:hover {
   margin-top: 16px;
 }
 
+/* ==========================================================================
+   Camp count switch
+   ========================================================================== */
+
+.setup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.setup-head h2 {
+  margin: 0;
+}
+
+.camp-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.camp-count-label {
+  margin-right: 2px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.camp-count-btn {
+  min-width: 34px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: none;
+  color: var(--color-muted);
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.camp-count-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-btn-bg-hover);
+}
+
+.camp-count-btn.is-active {
+  border-color: var(--color-btn-bg-hover);
+  background-color: var(--color-btn-bg-hover);
+  color: var(--color-btn-text);
+}
+
+.camp-count-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .btn.assign-btn {
   flex: 1;
   padding: 10px 16px;
@@ -604,6 +664,12 @@ a:hover {
   color: #1a1a1a;
 }
 
+.btn.assign-middle:not(:disabled):hover {
+  background-color: var(--color-team-middle);
+  border-color: var(--color-team-middle);
+  color: #1b1023;
+}
+
 .btn.assign-right:not(:disabled):hover {
   background-color: var(--color-team-right);
   border-color: var(--color-team-right);
@@ -611,8 +677,9 @@ a:hover {
 }
 
 /* Class, not ID — an ID here would outrank the :hover override below */
-.assign-left  .assign-label { color: var(--color-team-left); }
-.assign-right .assign-label { color: var(--color-team-right); }
+.assign-left   .assign-label { color: var(--color-team-left); }
+.assign-middle .assign-label { color: var(--color-team-middle); }
+.assign-right  .assign-label { color: var(--color-team-right); }
 
 /* On hover the button takes the team color, so the label follows the
    button's own dark text color instead of vanishing into the background */
@@ -690,6 +757,10 @@ a:hover {
   gap: 14px;
 }
 
+body[data-camps="3"] .roles-columns {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .roles-heading {
   display: flex;
   justify-content: space-between;
@@ -701,8 +772,9 @@ a:hover {
   border-bottom: 2px solid var(--color-border);
 }
 
-.roles-heading-left  { border-bottom-color: var(--color-team-left); }
-.roles-heading-right { border-bottom-color: var(--color-team-right); }
+.roles-heading-left   { border-bottom-color: var(--color-team-left); }
+.roles-heading-middle { border-bottom-color: var(--color-team-middle); }
+.roles-heading-right  { border-bottom-color: var(--color-team-right); }
 
 .roles-progress {
   color: var(--color-muted);
@@ -941,8 +1013,9 @@ a:hover {
   margin-top: 8px;
 }
 
-.night-step[data-alignment="left"]  { border-left-color: var(--color-team-left); }
-.night-step[data-alignment="right"] { border-left-color: var(--color-team-right); }
+.night-step[data-alignment="left"]   { border-left-color: var(--color-team-left); }
+.night-step[data-alignment="middle"] { border-left-color: var(--color-team-middle); }
+.night-step[data-alignment="right"]  { border-left-color: var(--color-team-right); }
 
 .night-row::before {
   counter-increment: night-step;
@@ -967,8 +1040,9 @@ a:hover {
   font-size: 0.9rem;
 }
 
-.night-player[data-alignment="left"]  { color: var(--color-team-left); }
-.night-player[data-alignment="right"] { color: var(--color-team-right); }
+.night-player[data-alignment="left"]   { color: var(--color-team-left); }
+.night-player[data-alignment="middle"] { color: var(--color-team-middle); }
+.night-player[data-alignment="right"]  { color: var(--color-team-right); }
 
 /* Expanded history — deliberately terse */
 .night-history {
@@ -1284,8 +1358,9 @@ a:hover {
   white-space: nowrap;
 }
 
-.player-align-tag[data-alignment="left"]  { color: var(--color-team-left); }
-.player-align-tag[data-alignment="right"] { color: var(--color-team-right); }
+.player-align-tag[data-alignment="left"]   { color: var(--color-team-left); }
+.player-align-tag[data-alignment="middle"] { color: var(--color-team-middle); }
+.player-align-tag[data-alignment="right"]  { color: var(--color-team-right); }
 
 .player-card.is-infiltrator {
   border-style: dashed;
@@ -1302,13 +1377,20 @@ a:hover {
   align-items: start;
 }
 
+/* Three camps means a third track. Set on <body> so the team columns and the
+   role columns below them stay in step with one switch. */
+body[data-camps="3"] .teams {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .team-panel {
   margin-bottom: 0;
   border-top: 3px solid var(--color-border);
 }
 
-.team-left  { border-top-color: var(--color-team-left); }
-.team-right { border-top-color: var(--color-team-right); }
+.team-left   { border-top-color: var(--color-team-left); }
+.team-middle { border-top-color: var(--color-team-middle); }
+.team-right  { border-top-color: var(--color-team-right); }
 
 /* Renameable team headings — an input styled to read as an h2 */
 .team-name {
@@ -1337,8 +1419,9 @@ a:hover {
   background-color: rgba(0, 0, 0, 0.25);
 }
 
-.team-left  .team-name { color: var(--color-team-left); }
-.team-right .team-name { color: var(--color-team-right); }
+.team-left   .team-name { color: var(--color-team-left); }
+.team-middle .team-name { color: var(--color-team-middle); }
+.team-right  .team-name { color: var(--color-team-right); }
 
 .team-head {
   display: flex;
@@ -1362,8 +1445,9 @@ a:hover {
   color: var(--color-heading);
 }
 
-.team-left  .team-total { color: var(--color-team-left); }
-.team-right .team-total { color: var(--color-team-right); }
+.team-left   .team-total { color: var(--color-team-left); }
+.team-middle .team-total { color: var(--color-team-middle); }
+.team-right  .team-total { color: var(--color-team-right); }
 
 .team-grid {
   display: grid;
@@ -1380,13 +1464,15 @@ a:hover {
 }
 
 /* Physical camp — the fallback, and what reveal mode shows */
-.player-card[data-team="left"]  { border-left-color: var(--color-team-left); }
-.player-card[data-team="right"] { border-left-color: var(--color-team-right); }
+.player-card[data-team="left"]   { border-left-color: var(--color-team-left); }
+.player-card[data-team="middle"] { border-left-color: var(--color-team-middle); }
+.player-card[data-team="right"]  { border-left-color: var(--color-team-right); }
 
 /* Loyalty wins where it's known, so an infiltrator reads as the other camp.
    Same specificity as the rules above, so order is what makes this win. */
-.player-card[data-alignment="left"]  { border-left-color: var(--color-team-left); }
-.player-card[data-alignment="right"] { border-left-color: var(--color-team-right); }
+.player-card[data-alignment="left"]   { border-left-color: var(--color-team-left); }
+.player-card[data-alignment="middle"] { border-left-color: var(--color-team-middle); }
+.player-card[data-alignment="right"]  { border-left-color: var(--color-team-right); }
 
 .player-card h3 {
   margin: 0;
@@ -1495,7 +1581,9 @@ a:hover {
   }
 
   /* Columns stack rather than squeezing to unusable widths */
-  .teams {
+  .teams,
+  body[data-camps="3"] .teams,
+  body[data-camps="3"] .roles-columns {
     grid-template-columns: 1fr;
   }
 
