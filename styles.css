@@ -5,8 +5,14 @@
 :root {
   /* Layout */
   --container-width: 1100px;
-  --container-radius: 12px;
   --gap: 24px;
+
+  /* Two radii, and that is the whole system. 0 for structure, 2px for the
+     things that behave like physical objects. Eight slightly-rounded values
+     is how a layout ends up looking generated rather than drawn.
+     Exception: anything carrying the 3px camp stripe is square, so the stripe
+     meets a hard corner rather than dying into a curve. */
+  --radius: 2px;
 
   /* Text */
   --color-text: #e8ecf5;
@@ -15,17 +21,35 @@
   --color-link: #7fb8ff;
   --color-link-hover: #b3d5ff;
 
-  /* Surfaces */
-  --color-container-bg: rgba(12, 18, 34, 0.82);
-  --color-panel-bg: rgba(255, 255, 255, 0.04);
-  --color-border: rgba(255, 255, 255, 0.14);
+  /* Surfaces — real colours, not sheets of translucent white stacked on dark.
+     The scrim is the reading column over the photograph; surface is what an
+     object sits on; sunk is a well you type into. */
+  --color-scrim: rgba(8, 11, 20, 0.90);
+  --color-surface: #141a26;
+  --color-surface-sunk: #0c1017;
+  --color-container-bg: var(--color-scrim);
+  --color-panel-bg: var(--color-surface);
+
+  /* One hairline, used sparingly, plus a stronger one for real divisions */
+  --color-border: rgba(255, 255, 255, 0.13);
+  --color-rule: rgba(255, 255, 255, 0.09);
+  --color-rule-strong: rgba(255, 255, 255, 0.24);
 
   /* Buttons */
   --color-btn-bg: #3b6fd4;
-  --color-btn-bg-hover: #4d84ee;
+  /* Deepens on hover rather than lightening: the old #4d84ee put white
+     button text at 3.6:1, which a host reading mid-narration feels. */
+  --color-btn-bg-hover: #3366cc;
   --color-btn-text: #ffffff;
   --color-btn-secondary-bg: transparent;
   --color-btn-secondary-text: #e8ecf5;
+
+  /* Destructive actions — Reset all, New game */
+  --color-danger: #ff8f8f;
+  --color-danger-bg: rgba(200, 60, 60, 0.18);
+
+  /* Keyboard focus ring, used by every focusable control */
+  --color-focus: #7fb8ff;
 
   /* Teams */
   --color-team-left: #e6c53f;
@@ -53,7 +77,7 @@
 
 body {
   margin: 0;
-  padding: var(--gap) 0;
+  padding: 0;
   min-height: 100vh;
 
   font-family: var(--font-main);
@@ -93,32 +117,53 @@ a:hover {
 }
 
 /* ==========================================================================
-   Fixed-width centered container
+   The column
+
+   A single unbroken column of dark running the full height of the page, not
+   a rounded card floating on a photograph. The photo shows at the sides on a
+   wide screen and the column holds the work.
    ========================================================================== */
 
 .container {
   width: var(--container-width);
-  max-width: calc(100% - 2 * var(--gap));
+  max-width: 100%;
+  min-height: 100vh;
   margin: 0 auto;
-  padding: calc(var(--gap) * 1.5);
+  padding: 34px var(--gap) 56px;
 
-  background-color: var(--color-container-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--container-radius);
+  background-color: var(--color-scrim);
+  border: 0;
+  border-radius: 0;
 }
 
 /* ==========================================================================
    Header / nav / footer
    ========================================================================== */
 
+/* Title and tagline share a baseline instead of stacking into a centred
+   hero. The host looks at this between steps of a live game; it does not need
+   165px of masthead every time. */
 .site-header {
-  text-align: center;
-  margin-bottom: var(--gap);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+
+  padding-bottom: 12px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--color-rule-strong);
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.85rem;
+  letter-spacing: 0.005em;
 }
 
 .tagline {
   color: var(--color-muted);
   margin: 0;
+  font-size: 0.95rem;
 }
 
 .site-nav {
@@ -132,12 +177,11 @@ a:hover {
 }
 
 .site-footer {
-  margin-top: var(--gap);
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
-  text-align: center;
+  margin-top: 44px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-rule);
   color: var(--color-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .site-footer p {
@@ -148,16 +192,21 @@ a:hover {
    Reveal mode toggle
    ========================================================================== */
 
+/* Control strips run the full width of the column and are bounded by rules,
+   the way a toolbar is. Boxing them in a rounded rectangle inside an already
+   boxed page was the third nested card on the screen. */
 .reveal-bar {
   display: flex;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  margin-bottom: var(--gap);
-  padding: 12px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background-color: var(--color-panel-bg);
+
+  margin: 0 calc(var(--gap) * -1) 30px;
+  padding: 12px var(--gap);
+  border: 0;
+  border-block: 1px solid var(--color-rule);
+  border-radius: 0;
+  background-color: var(--color-surface);
 }
 
 .reveal-toggle {
@@ -207,7 +256,7 @@ a:hover {
 }
 
 .reveal-toggle input:focus-visible + .reveal-switch {
-  outline: 2px solid var(--color-btn-bg-hover);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -306,8 +355,10 @@ a:hover {
 
   background-color: #05070d;
 
-  /* Whatever the viewport has left once the header and footer are paid for */
-  --wheel-size: min(92vw, calc(100vh - 250px), 880px);
+  /* This is the one screen that gets turned around to face the table, so the
+     disc takes everything the viewport has and the chrome is trimmed to what
+     the room actually needs to read. */
+  --wheel-size: min(94vw, calc(100vh - 232px), 1100px);
 }
 
 .wheel-stage {
@@ -315,7 +366,7 @@ a:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 10px;
 
   width: 100%;
   height: 100%;
@@ -330,8 +381,8 @@ a:hover {
 .wheel-next {
   margin: 0;
   color: var(--color-muted);
-  font-size: 1.1rem;
-  letter-spacing: 0.06em;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -356,8 +407,12 @@ a:hover {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 4px solid rgba(255, 255, 255, 0.65);
-  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+  border: 6px solid rgba(255, 255, 255, 0.82);
+
+  /* Neutral elevation only. The camp at stake is already said by every slice
+     being that colour and by the header above it; a coloured halo round the
+     rim would be decoration on top of a message already delivered. */
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75);
 
   /* Duration must stay in step with WHEEL_SPIN_MS in script.js */
   transition: transform 8s cubic-bezier(0.15, 0.78, 0.1, 1);
@@ -400,17 +455,56 @@ a:hover {
 /* Block rather than flex: text-overflow only ellipsises a block box, and a
    line-height matching the height does the vertical centring just as well. */
 .wheel-label {
-  height: 2.4em;
-  margin-top: -1.2em;
-  line-height: 2.4em;
+  height: 1.7em;
+  margin-top: -0.85em;
+  line-height: 1.7em;
 
-  padding-right: 7%;
+  padding-right: 6%;
   text-align: right;
 
   color: #0b1020;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.wheel-label-text {
+  display: inline-block;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Turned about its own centre, so a strip rotated past the vertical still
+   reads left-to-right. Same position on the slice, right way up. */
+.wheel-label-text.is-flipped {
+  transform: rotate(180deg);
+}
+
+/* The verdict: the winning name lifts off its slice while the wedge pulses
+   underneath it. */
+/* Stays dark and gains a white halo rather than going white: the wedge under
+   it blazes to near-white at the peak of the pulse, so light-on-light would
+   lose the name at exactly the moment the table is looking at it. */
+.wheel-label-text.is-winner {
+  color: #0b1020;
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 1),
+    0 0 16px rgba(255, 255, 255, 0.95);
+  animation: wheel-winner-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.wheel-label-text.is-flipped.is-winner {
+  animation-name: wheel-winner-pop-flipped;
+}
+
+@keyframes wheel-winner-pop {
+  from { transform: scale(1); }
+  to   { transform: scale(1.35); }
+}
+
+@keyframes wheel-winner-pop-flipped {
+  from { transform: rotate(180deg) scale(1); }
+  to   { transform: rotate(180deg) scale(1.35); }
 }
 
 .wheel-spoke {
@@ -434,8 +528,8 @@ a:hover {
 }
 
 @keyframes wheel-glow-pulse {
-  0%, 100% { opacity: 0.1; }
-  50%      { opacity: 0.75; }
+  0%, 100% { opacity: 0.15; }
+  50%      { opacity: 0.95; }
 }
 
 .wheel-foot {
@@ -447,9 +541,10 @@ a:hover {
 
 .wheel-result {
   margin: 0;
-  min-height: 1.5em;
+  min-height: 1.4em;
   color: var(--color-heading);
-  font-size: 1.35rem;
+  font-size: 2rem;
+  line-height: 1.4;
 }
 
 .wheel-result[data-team="left"]   { color: var(--color-team-left); }
@@ -457,9 +552,9 @@ a:hover {
 .wheel-result[data-team="right"]  { color: var(--color-team-right); }
 
 .btn.wheel-spin {
-  padding: 12px 48px;
-  font-size: 1.2rem;
-  letter-spacing: 0.12em;
+  padding: 14px 64px;
+  font-size: 1.45rem;
+  letter-spacing: 0.14em;
 }
 
 /* Landscape phones have no height to spare, so drop the header line and let
@@ -474,6 +569,11 @@ a:hover {
   }
 
   .wheel-result {
+    font-size: 1.3rem;
+  }
+
+  .btn.wheel-spin {
+    padding: 10px 44px;
     font-size: 1.1rem;
   }
 }
@@ -482,16 +582,29 @@ a:hover {
    Panels
    ========================================================================== */
 
+/* Sections are separated by a rule and by air, not by being put in a box.
+   More space above a heading than below it, so each section reads as owning
+   what follows it rather than floating. */
 .panel {
-  background-color: var(--color-panel-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: var(--gap);
-  margin-bottom: var(--gap);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  border-radius: 0;
+  padding: 26px 0 0;
+  margin-bottom: 34px;
 }
 
 .panel:last-child {
   margin-bottom: 0;
+}
+
+/* A control band already ends with a rule, so the next section must not draw
+   a second one a few pixels below it. */
+.reveal-bar + .panel,
+.game-bar + .panel,
+.camp-tools + .panel {
+  border-top: 0;
+  padding-top: 0;
 }
 
 .panel ul {
@@ -519,7 +632,7 @@ a:hover {
   flex: 1;
   padding: 10px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius);
 
   background-color: rgba(0, 0, 0, 0.25);
   color: var(--color-text);
@@ -584,8 +697,11 @@ a:hover {
 
 .assign-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 16px;
+  /* Stretched across the whole column these read as empty input fields */
+  max-width: 760px;
 }
 
 /* ==========================================================================
@@ -620,7 +736,7 @@ a:hover {
   min-width: 34px;
   padding: 4px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: none;
   color: var(--color-muted);
   font-family: var(--font-main);
@@ -646,16 +762,16 @@ a:hover {
 
 .btn.assign-btn {
   flex: 1;
+  /* Camp names are free text, so the label has to be allowed to wrap and the
+     button to shrink — a flex item's default min-width would otherwise push
+     the whole bar past the panel edge. */
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 10px 16px;
   border: 1px solid var(--color-border);
   background: none;
   color: var(--color-text);
   font-size: 1rem;
-}
-
-.btn.assign-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .btn.assign-left:not(:disabled):hover {
@@ -776,6 +892,13 @@ body[data-camps="3"] .roles-columns {
 .roles-heading-middle { border-bottom-color: var(--color-team-middle); }
 .roles-heading-right  { border-bottom-color: var(--color-team-right); }
 
+/* Takes whatever the counter beside it doesn't need, and breaks a long camp
+   name rather than pushing the column wider */
+.roles-camp-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .roles-progress {
   color: var(--color-muted);
   font-size: 0.85rem;
@@ -793,15 +916,23 @@ body[data-camps="3"] .roles-columns {
   overflow-y: auto;
 }
 
+/* Rows under a hairline, not eighteen bordered cards per camp. A list of
+   options is a list; boxing each one is how a role picker turns into a wall
+   of identical rounded rectangles. */
 .role-option {
   display: flex;
-  gap: 8px;
+  gap: 9px;
   align-items: baseline;
-  padding: 5px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 5px;
+  padding: 7px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--color-rule);
+  border-radius: 0;
   cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.25);
+  background: none;
+}
+
+.role-option:hover:not(.is-disabled) {
+  background-color: var(--color-surface);
 }
 
 /* Thin rule between role groups, with the group's Roman numeral centered on it */
@@ -809,15 +940,11 @@ body[data-camps="3"] .roles-columns {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 4px 2px;
+  margin: 20px 0 2px;
 }
 
-.role-group-divider::before,
-.role-group-divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background-color: var(--color-border);
+.role-group-divider:first-child {
+  margin-top: 4px;
 }
 
 .role-group-label {
@@ -898,12 +1025,8 @@ body[data-camps="3"] .roles-columns {
 
 .assign-roles-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-}
-
-.assign-roles-actions .btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 /* ==========================================================================
@@ -915,7 +1038,7 @@ body[data-camps="3"] .roles-columns {
   margin-top: 10px;
   padding: 5px 6px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius);
 
   background-color: rgba(0, 0, 0, 0.4);
   color: var(--color-text);
@@ -953,9 +1076,9 @@ body[data-camps="3"] .roles-columns {
   margin-top: 8px;
   padding: 4px 7px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius);
 
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: var(--color-surface-sunk);
   color: var(--color-text);
 
   font-family: var(--font-main);
@@ -975,65 +1098,6 @@ body[data-camps="3"] .roles-columns {
 /* ==========================================================================
    Night order
    ========================================================================== */
-
-.night-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: night-step;
-}
-
-.night-step {
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-border);
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.25);
-}
-
-.night-row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.night-caret {
-  flex: 0 0 auto;
-  width: 1em;
-  color: var(--color-muted);
-  font-size: 0.8rem;
-}
-
-.night-row:hover .night-caret {
-  color: var(--color-heading);
-}
-
-.night-step + .night-step {
-  margin-top: 8px;
-}
-
-.night-step[data-alignment="left"]   { border-left-color: var(--color-team-left); }
-.night-step[data-alignment="middle"] { border-left-color: var(--color-team-middle); }
-.night-step[data-alignment="right"]  { border-left-color: var(--color-team-right); }
-
-.night-row::before {
-  counter-increment: night-step;
-  content: counter(night-step);
-  flex: 0 0 1.6em;
-  color: var(--color-muted);
-  font-size: 0.85rem;
-  text-align: right;
-}
-
-.night-step-body {
-  flex: 1;
-}
-
-.night-role {
-  color: var(--color-heading);
-  font-size: 1.05rem;
-}
 
 .night-player {
   color: var(--color-muted);
@@ -1059,7 +1123,7 @@ body[data-camps="3"] .roles-columns {
 .history-flag {
   color: var(--color-heading);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 1px 7px;
   font-size: 0.75rem;
 }
@@ -1089,7 +1153,7 @@ body[data-camps="3"] .roles-columns {
   flex: 0 0 auto;
   padding: 2px 8px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   cursor: pointer;
 
   background: none;
@@ -1118,36 +1182,32 @@ body[data-camps="3"] .roles-columns {
   font-style: italic;
 }
 
-/* Role that can't act tonight: didn't burn, or already spent a once-per-game
-   ability. Dimming is scoped to the text so the spend toggle stays legible —
-   opacity on the row would drag its own control down with it. */
-.night-step.is-inactive .night-step-body,
-.night-step.is-inactive .night-action,
-.night-step.is-inactive .night-caret {
-  opacity: 0.35;
-}
+/* Gated: waiting on a burn that has not happened yet. Deliberately given no
+   styling of its own — not dimmed, not struck through, and not dashed, since
+   a dashed border already means "infiltrator" on the player cards. The host
+   can still change this tonight, so the row keeps reading as live and the
+   chip carries the condition in words. */
 
-.night-step.is-inactive .night-role {
-  text-decoration: line-through;
+.night-chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .night-action {
   flex: 0 0 auto;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.night-action.is-undecided {
-  filter: grayscale(1);
-  opacity: 0.3;
-}
-
-.night-desc {
-  display: block;
-  margin-top: 3px;
-  color: var(--color-muted);
   font-size: 0.85rem;
-  line-height: 1.4;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--color-muted);
 }
 
 /* ==========================================================================
@@ -1155,28 +1215,20 @@ body[data-camps="3"] .roles-columns {
    ========================================================================== */
 
 .camp-tools {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: var(--gap);
-  padding: 12px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background-color: var(--color-panel-bg);
+  display: block;
+
+  margin: 0 calc(var(--gap) * -1) 30px;
+  padding: 12px var(--gap);
+  border: 0;
+  border-block: 1px solid var(--color-rule);
+  border-radius: 0;
+  background-color: var(--color-surface);
 }
 
 .camp-tools-hint {
   margin: 0;
   color: var(--color-muted);
   font-size: 0.9rem;
-}
-
-.camp-tools-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .infiltrator-count {
@@ -1191,8 +1243,8 @@ body[data-camps="3"] .roles-columns {
 .infiltrator-count select {
   padding: 5px 6px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius);
+  background-color: var(--color-surface-sunk);
   color: var(--color-text);
   font-family: var(--font-main);
   font-size: 0.9rem;
@@ -1202,42 +1254,20 @@ body[data-camps="3"] .roles-columns {
   opacity: 0.4;
 }
 
-.btn.btn-start:not(:disabled) {
-  background-color: var(--color-team-right);
-  color: #10231a;
-}
-
-.btn.btn-start:not(:disabled):hover {
-  background-color: #5fc586;
-  color: #10231a;
-}
-
 .game-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: var(--gap);
-  padding: 12px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background-color: var(--color-panel-bg);
+  display: block;
+
+  margin: 0 calc(var(--gap) * -1) 30px;
+  padding: 12px var(--gap);
+  border: 0;
+  border-block: 1px solid var(--color-rule);
+  border-radius: 0;
+  background-color: var(--color-surface);
 }
 
 .game-bar-text {
   margin: 0;
   color: var(--color-heading);
-}
-
-.game-bar-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.game-bar-actions .btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 /* ==========================================================================
@@ -1280,10 +1310,10 @@ body[data-camps="3"] .roles-columns {
   height: 22px;
   padding: 0;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
 
-  background-color: rgba(0, 0, 0, 0.35);
+  background-color: var(--color-surface-sunk);
   color: var(--color-text);
 
   font-family: var(--font-main);
@@ -1301,36 +1331,67 @@ body[data-camps="3"] .roles-columns {
   cursor: default;
 }
 
+/* Stacked rather than side by side: the labels made each button too wide to
+   sit in a row inside the card's 92px control gutter, and widening the gutter
+   would squeeze the card text that the 900px breakpoint just rescued. */
 .player-action {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .action-btn {
-  width: 34px;
-  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  padding: 3px 7px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
 
-  background-color: rgba(0, 0, 0, 0.3);
-  /* Emoji render flat until the choice is made */
-  filter: grayscale(1);
-  opacity: 0.5;
+  background-color: var(--color-surface-sunk);
+  color: var(--color-text);
 
-  font-size: 1.2rem;
+  font-family: var(--font-main);
+  font-size: 0.75rem;
   line-height: 1.3;
 }
 
-.action-btn:hover {
+/* Only the emoji greys out while undecided. The word stays legible, because
+   the word is the part that tells a first-time host what the button does. */
+.action-btn .action-glyph {
+  filter: grayscale(1);
+  opacity: 0.5;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.action-btn .action-text {
+  opacity: 0.75;
+}
+
+.action-btn:hover .action-glyph {
   filter: grayscale(0.4);
   opacity: 0.85;
+}
+
+.action-btn:hover {
   border-color: var(--color-btn-bg-hover);
 }
 
-.action-btn.is-active {
+.action-btn:hover .action-text {
+  opacity: 1;
+}
+
+.action-btn.is-active .action-glyph {
   filter: none;
   opacity: 1;
+}
+
+.action-btn.is-active .action-text {
+  opacity: 1;
+  color: var(--color-heading);
 }
 
 .action-roast.is-active {
@@ -1343,11 +1404,6 @@ body[data-camps="3"] .roles-columns {
   background-color: rgba(226, 112, 58, 0.22);
 }
 
-.camp-tools .btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
 /* ==========================================================================
    Alignment badge — who a player is actually loyal to
    ========================================================================== */
@@ -1355,7 +1411,8 @@ body[data-camps="3"] .roles-columns {
 .player-align-tag {
   font-size: 0.85rem;
   color: var(--color-muted);
-  white-space: nowrap;
+  /* Wraps with the name it trails, however long the camp is called */
+  overflow-wrap: anywhere;
 }
 
 .player-align-tag[data-alignment="left"]   { color: var(--color-team-left); }
@@ -1373,8 +1430,9 @@ body[data-camps="3"] .roles-columns {
 .teams {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 14px 28px;
   align-items: start;
+  margin-bottom: 34px;
 }
 
 /* Three camps means a third track. Set on <body> so the team columns and the
@@ -1383,9 +1441,16 @@ body[data-camps="3"] .teams {
   grid-template-columns: repeat(3, 1fr);
 }
 
+/* A camp is a column under a coloured rule. It does not need to also be a
+   card: the rule, the name and the stack of player cards already group it,
+   and boxing it put a card inside a card inside a card. */
 .team-panel {
   margin-bottom: 0;
+  padding: 12px 0 0;
+  background: none;
+  border: 0;
   border-top: 3px solid var(--color-border);
+  border-radius: 0;
 }
 
 .team-left   { border-top-color: var(--color-team-left); }
@@ -1399,7 +1464,7 @@ body[data-camps="3"] .teams {
   margin: 0 0 2px;
   padding: 2px 6px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius);
 
   background: none;
   color: var(--color-heading);
@@ -1454,13 +1519,18 @@ body[data-camps="3"] .teams {
   gap: 10px;
 }
 
+/* The one thing on the page that stays an object, because it stands for a
+   person sitting at the table. Square, though: anything carrying the 3px camp
+   stripe gets a hard corner so the stripe meets the edge cleanly instead of
+   dying into a curve. The fill and the border do the object work; the 2px
+   radius was doing none of it. */
 .player-card {
   position: relative;
   padding: 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-rule);
   border-left: 3px solid var(--color-border);
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 0;
+  background-color: var(--color-surface);
 }
 
 /* Physical camp — the fallback, and what reveal mode shows */
@@ -1536,7 +1606,7 @@ body[data-camps="3"] .teams {
   display: inline-block;
   padding: 10px 22px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
 
   background-color: var(--color-btn-bg);
@@ -1547,10 +1617,19 @@ body[data-camps="3"] .teams {
   text-decoration: none;
 }
 
-.btn:hover {
+/* Hover is guarded everywhere: an unguarded :hover lights a disabled button up
+   and it reads as clickable, which is the one thing a disabled state must not do. */
+.btn:hover:not(:disabled) {
   background-color: var(--color-btn-bg-hover);
   color: var(--color-btn-text);
   text-decoration: none;
+}
+
+/* One base disabled state for every .btn. Container-scoped copies of this rule
+   used to leave anything outside them (the Wheel button) looking enabled. */
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .btn-secondary {
@@ -1559,9 +1638,139 @@ body[data-camps="3"] .teams {
   border-color: var(--color-border);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background-color: var(--color-panel-bg);
   color: var(--color-btn-secondary-text);
+}
+
+/* ==========================================================================
+   Button roles
+
+   Four roles, and the rule that makes them mean anything: exactly ONE filled
+   button per bar, and it is the action that moves the host forward. Before
+   this, bare .btn was filled and sat on five buttons across the two bars, so
+   "filled" meant "is a button" rather than "is the action" — which is why
+   Start game once needed its own green override just to be seen next to its
+   neighbours.
+
+     .btn-commit     filled      the one action that advances the phase
+     .btn-secondary  outlined    operations you may or may not use
+     .btn-danger     recessive   throws work away
+     .btn-dev        quiet       not part of the product at all
+   ========================================================================== */
+
+/* The commit. Also pushed to the far end of its row, away from everything
+   that is merely available. */
+.btn-commit {
+  margin-left: auto;
+}
+
+/* The dev fixture is not part of the game. It reads as a note rather than a
+   control, so it never competes with the real actions — and it was the
+   brightest thing on the setup screen while the primaries sat disabled. */
+.btn-dev {
+  padding: 4px 10px;
+  background: none;
+  border-color: transparent;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--color-rule-strong);
+}
+
+.btn-dev:hover:not(:disabled) {
+  background: none;
+  color: var(--color-text);
+  text-decoration-color: currentColor;
+}
+
+/* Row one: what is going on, plus the ways out. Row two: what to do next.
+   Keeping the destructive control on the status row is what stops Reset all
+   sitting a thumb's width from Start game. */
+.bar-status {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.bar-status > p {
+  margin: 0;
+}
+
+.bar-aside {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Reset all / New game throw a live game away. They sat at the same weight as
+   everything else in their bar, and next to a dimmed primary they read as the
+   brightest thing on screen. They recede until aimed at. */
+.btn-danger {
+  background-color: transparent;
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+/* ==========================================================================
+   Focus
+
+   The UA's default ring is a thin dark outline, which on this background is
+   effectively invisible. Every control the host can tab to gets the same ring
+   the reveal toggle already used, so keyboard position is never lost.
+   ========================================================================== */
+
+.btn:focus-visible,
+.camp-count-btn:focus-visible,
+.marsh-btn:focus-visible,
+.action-btn:focus-visible,
+.player-remove:focus-visible,
+.runner-history-btn:focus-visible,
+.once-toggle:focus-visible,
+.roles-upload:focus-within,
+.role-option:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The file input inside the upload label is visually hidden, so the label has
+   to carry its focus ring. */
+.roles-upload:focus-within {
+  border-color: var(--color-focus);
+}
+
+/* ==========================================================================
+   Medium screens — three camps stop sharing a row
+
+   A playing card reserves a fixed 92px gutter for its marshmallow counter and
+   roast/burn controls. Split three ways below this width the remaining content
+   column is about 70px, which truncates the reminder field and breaks role
+   names over three lines. Two camps still fit; three drop to one column.
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  body[data-camps="3"] .teams,
+  body[data-camps="3"] .roles-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ==========================================================================
@@ -1573,7 +1782,11 @@ body[data-camps="3"] .teams {
     --gap: 16px;
   }
 
-  h1 { font-size: 2rem; }
+  .site-header h1 { font-size: 1.5rem; }
+
+  .container {
+    padding: 22px var(--gap) 40px;
+  }
 
   .site-nav {
     flex-wrap: wrap;
@@ -1590,4 +1803,217 @@ body[data-camps="3"] .teams {
   .player-form {
     max-width: 100%;
   }
+}
+
+/* ==========================================================================
+   Reduced motion
+
+   The wheel is the only real motion on the site: an 8s spin plus a pulsing
+   glow. settle() in script.js listens for transitionend with a timer fallback,
+   so collapsing the transition lands the spin immediately and correctly rather
+   than leaving the result waiting on an animation that no longer runs.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel-disc {
+    transition-duration: 0.01ms;
+  }
+
+  .wheel-glow.is-on {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
+/* ==========================================================================
+   Coarse pointers
+
+   The host runs this from a tablet at the table, and the marshmallow counter,
+   the roast/burn pair and the card's remove button are the controls they touch
+   most. At their drawn sizes (22px and 28px) they are below a reliable touch
+   target, so a coarse pointer gets the hit area padded out without changing
+   how any of it looks on a mouse.
+   ========================================================================== */
+
+@media (pointer: coarse) {
+  .marsh-btn,
+  .action-btn,
+  .player-remove {
+    position: relative;
+  }
+
+  .marsh-btn::after,
+  .action-btn::after,
+  .player-remove::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ==========================================================================
+   Night runner
+
+   One step at a time, sitting above the camp board rather than below it, so
+   the host can read the step and reach any player's controls without leaving
+   it. Paging is the correction mechanism: it moves the cursor and nothing
+   else, so nothing here ever advances or ends the night on its own.
+   ========================================================================== */
+
+.night-runner {
+  margin-bottom: var(--gap);
+}
+
+.runner-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.runner-head h2 {
+  margin: 0;
+}
+
+.runner-position {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  /* Tabular figures stop the step counter shifting as it counts up */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Square for the same reason as .player-card: it carries a camp stripe. */
+.runner-step {
+  padding: 18px 20px;
+  border: 1px solid var(--color-rule);
+  border-left: 3px solid var(--color-border);
+  border-radius: 0;
+  background-color: var(--color-surface);
+}
+
+.runner-step[data-alignment="left"]   { border-left-color: var(--color-team-left); }
+.runner-step[data-alignment="middle"] { border-left-color: var(--color-team-middle); }
+.runner-step[data-alignment="right"]  { border-left-color: var(--color-team-right); }
+
+.runner-role {
+  margin: 0 0 2px;
+  color: var(--color-heading);
+  font-size: 1.6rem;
+  line-height: 1.15;
+}
+
+.runner-player {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.runner-desc {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+  /* Kept to a readable measure even on a wide laptop */
+  max-width: 68ch;
+}
+
+.runner-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.runner-history-btn {
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+
+  background: none;
+  color: var(--color-muted);
+
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.runner-history-btn:hover {
+  color: var(--color-heading);
+  border-color: var(--color-btn-bg-hover);
+}
+
+/* Spent: finished for the rest of the game, and the only state the host can
+   do nothing about — so the only one that earns a strikethrough. */
+.runner-step.is-spent .runner-role {
+  text-decoration: line-through;
+}
+
+.runner-step.is-spent .runner-role,
+.runner-step.is-spent .runner-player,
+.runner-step.is-spent .runner-desc {
+  opacity: 0.4;
+}
+
+/* Gated ("Needs burn") gets no dimming of its own: the host can still flip
+   that player's choice tonight, so the step has to keep reading as live. */
+
+/* Capped: stretched across the full column these read as two slabs rather
+   than a pair of controls. */
+.runner-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  max-width: 440px;
+}
+
+.runner-nav .btn {
+  flex: 1;
+  padding: 14px 22px;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 600px) {
+  .runner-role {
+    font-size: 1.35rem;
+  }
+
+  /* Thumb-sized, because on a tablet at the table this is the control the
+     host reaches for on every step of every night. */
+  .runner-nav .btn {
+    padding: 16px 18px;
+  }
+}
+
+/* End of the night, offered at the last step. Separated from the Prev/Next
+   pair by a rule so it never reads as a third page button — paging moves the
+   cursor, this resolves the round. */
+.runner-end {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.runner-end-text {
+  flex: 1 1 260px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
 }

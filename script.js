@@ -18,9 +18,38 @@ document.addEventListener('DOMContentLoaded', function () {
   var players = [];
   var nextId = 1;
 
-  // Id of the unassigned player currently picked, or null. Assignment is
-  // one-way: once a player is on a team they can only be deleted.
-  var selectedId = null;
+  // Ids of the unassigned players currently picked, in click order. Clicking a
+  // card adds or removes it, so a whole group can be seated in one press.
+  // Assignment is one-way: once a player is on a camp they can only be deleted.
+  var selectedIds = [];
+
+  function isSelected(id) {
+    return selectedIds.indexOf(id) !== -1;
+  }
+
+  function toggleSelected(id) {
+    var at = selectedIds.indexOf(id);
+    if (at === -1) {
+      selectedIds.push(id);
+    } else {
+      selectedIds.splice(at, 1);
+    }
+  }
+
+  function clearSelection() {
+    selectedIds = [];
+  }
+
+  // A pick only stands while the player is still on the roster and still
+  // unassigned, so deleting or seating someone drops them from the selection.
+  // Sole owner of that clean-up — the paths that remove or seat players don't
+  // each have to remember to prune.
+  function pruneSelection() {
+    selectedIds = selectedIds.filter(function (id) {
+      var p = playerById(id);
+      return !!p && p.team === null;
+    });
+  }
 
   // Camps in play: two by default, three when the switch above the roster is
   // flipped. The third camp turns a two-way swap into a rotation, since three
@@ -97,6 +126,12 @@ document.addEventListener('DOMContentLoaded', function () {
     left: document.getElementById('assign-left-label'),
     middle: document.getElementById('assign-middle-label'),
     right: document.getElementById('assign-right-label')
+  };
+
+  var assignCounts = {
+    left: document.getElementById('assign-left-count'),
+    middle: document.getElementById('assign-middle-count'),
+    right: document.getElementById('assign-right-count')
   };
 
   // Third-camp markup that is shown or hidden with the camp count
@@ -180,7 +215,19 @@ document.addEventListener('DOMContentLoaded', function () {
   var rotateCcwBtn = document.getElementById('rotate-ccw');
 
   var nightPanel = document.getElementById('night-order');
-  var nightList = document.getElementById('night-list');
+  var runnerPosition = document.getElementById('runner-position');
+  var runnerStep = document.getElementById('runner-step');
+  var runnerPrev = document.getElementById('runner-prev');
+  var runnerNext = document.getElementById('runner-next');
+  var runnerEnd = document.getElementById('runner-end');
+
+  // Where the host is in tonight's order. Two values because the cursor has to
+  // survive the list changing underneath it: nightOrder() is re-derived on
+  // every render, and flipping a roast/burn toggle can move a burn-gated role
+  // in or out of the set mid-night. The key is the real anchor; the position
+  // is only the fallback for when the anchored step no longer exists.
+  var currentStepKey = null;
+  var currentStepPos = 0;
 
   var campTools = document.getElementById('camp-tools');
   var infiltrateBtn = document.getElementById('assign-infiltrators');
@@ -229,27 +276,28 @@ document.addEventListener('DOMContentLoaded', function () {
     players = players.filter(function (p) {
       return p.id !== id;
     });
-    if (selectedId === id) {
-      selectedId = null;
-    }
   }
 
   function assignPlayer(player, team) {
     player.team = team;
     // Loyal to their own camp until infiltrators are drawn
     player.alignment = team;
-
-    if (selectedId === player.id) {
-      selectedId = null;
-    }
   }
 
+  // Seats everyone picked, in roster order rather than the order they were
+  // clicked, so the camp fills the way the unassigned row reads.
   function assignSelected(team) {
-    var player = playerById(selectedId);
-    if (player && isActiveTeam(team)) {
-      assignPlayer(player, team);
+    if (!isActiveTeam(team)) {
+      return;
     }
-    selectedId = null;
+
+    players.forEach(function (p) {
+      if (p.team === null && isSelected(p.id)) {
+        assignPlayer(p, team);
+      }
+    });
+
+    clearSelection();
   }
 
   function unassignedPlayers() {
@@ -456,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function loadTestGame() {
     players = [];
     nextId = 1;
-    selectedId = null;
+    clearSelection();
 
     var camps = activeTeams();
 
@@ -816,95 +864,222 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Identity of a step, stable across the re-derivations that happen on every
+  // render. An array index is not: a burn-gated role entering or leaving the
+  // set would silently move the cursor onto a different role.
+  function stepKey(step) {
+    return step.player.id + '|' + step.role.name;
+  }
+
+  // Nights already resolved, counted off the history that endRoastingPhase()
+  // writes. Every seated player gets one 'night' entry per round, so the
+  // longest run is the number of completed nights.
+  function nightsCompleted() {
+    return players.reduce(function (most, p) {
+      if (p.team === null || !Array.isArray(p.history)) {
+        return most;
+      }
+      var nights = p.history.filter(function (h) {
+        return h.type === 'night';
+      }).length;
+      return Math.max(most, nights);
+    }, 0);
+  }
+
+  // Resolve the cursor against tonight's actual order. Prefers the anchored
+  // step; falls back to the nearest surviving position when that step is gone
+  // (its player was removed), rather than throwing the host back to the start.
+  function resolveStepIndex(steps) {
+    if (!steps.length) {
+      return -1;
+    }
+    if (currentStepKey !== null) {
+      for (var i = 0; i < steps.length; i++) {
+        if (stepKey(steps[i]) === currentStepKey) {
+          return i;
+        }
+      }
+    }
+    return Math.min(Math.max(currentStepPos, 0), steps.length - 1);
+  }
+
+  // Paging is the correction mechanism, so it moves the cursor and nothing
+  // else: it never advances on its own, never wraps, and never ends the night.
+  // Ending the round stays the host's explicit press of End roasting phase.
+  function moveStep(delta) {
+    var steps = nightOrder();
+    if (!steps.length) {
+      return;
+    }
+    var next = Math.min(Math.max(resolveStepIndex(steps) + delta, 0), steps.length - 1);
+    currentStepPos = next;
+    currentStepKey = stepKey(steps[next]);
+    render();
+  }
+
+  // Players still owing a roast-or-burn choice. The night cannot be resolved
+  // until every seated player has one, so this is what the UI says out loud
+  // instead of leaving a disabled button to be puzzled over.
+  function undecidedPlayers() {
+    return players.filter(function (p) {
+      return p.team !== null && !p.action;
+    });
+  }
+
+  // The one way a night ends, wherever it is triggered from. Never fired by
+  // paging to the last step — the host presses it.
+  function resolveNight() {
+    endRoastingPhase();
+    currentStepKey = null;
+    currentStepPos = 0;
+    render();
+  }
+
   function renderNightOrder() {
     nightPanel.hidden = phase !== 'playing';
-    // Clear even when hidden so stale (possibly expanded) rows don't linger
-    nightList.textContent = '';
+    // Clear even when hidden so a stale step doesn't linger behind the panel
+    runnerStep.textContent = '';
     if (phase !== 'playing') {
       return;
     }
 
-    nightOrder().forEach(function (step) {
-      var item = document.createElement('li');
-      item.className = 'night-step';
-      item.dataset.alignment = step.player.alignment;
+    var steps = nightOrder();
+    var index = resolveStepIndex(steps);
 
-      // Burn-gated roles do nothing unless the player actually burned, and a
-      // spent once-per-game role does nothing at all any more
-      if (roleRequiresBurn(step.role) && step.player.action !== 'burn') {
-        item.classList.add('is-inactive');
-      }
-      if (roleOncePerGame(step.role) && step.player.usedAbility) {
-        item.classList.add('is-inactive');
-      }
+    if (index === -1) {
+      runnerPosition.textContent = '';
+      runnerPrev.disabled = true;
+      runnerNext.disabled = true;
+      return;
+    }
 
-      var body = document.createElement('div');
-      body.className = 'night-step-body';
+    // Keep the stored cursor in step with what is actually on screen, so a
+    // reload resumes here rather than wherever the pointer last drifted.
+    currentStepPos = index;
+    currentStepKey = stepKey(steps[index]);
 
-      var role = document.createElement('span');
-      role.className = 'night-role';
-      role.textContent = step.role.name;
-      body.appendChild(role);
+    var step = steps[index];
+    runnerPosition.textContent = 'Night ' + (nightsCompleted() + 1) +
+      ' · Step ' + (index + 1) + ' of ' + steps.length;
 
-      var who = document.createElement('span');
-      who.className = 'night-player';
-      who.dataset.alignment = step.player.alignment;
-      who.textContent = ' — ' + step.player.name;
-      body.appendChild(who);
+    runnerPrev.disabled = index === 0;
+    runnerNext.disabled = index === steps.length - 1;
 
-      var desc = document.createElement('span');
-      desc.className = 'night-desc';
-      desc.textContent = step.role.description;
-      body.appendChild(desc);
+    runnerStep.dataset.alignment = step.player.alignment;
 
+    // Same two facts the list used to conflate. A burn-gated role is waiting
+    // on a condition the host can still change tonight; a spent once-per-game
+    // role is finished for the game.
+    var gated = roleRequiresBurn(step.role) && step.player.action !== 'burn';
+    var spent = roleOncePerGame(step.role) && step.player.usedAbility;
+
+    runnerStep.className = 'runner-step' +
+      (gated ? ' is-gated' : '') +
+      (spent ? ' is-spent' : '');
+
+    var heading = document.createElement('p');
+    heading.className = 'runner-role';
+    heading.textContent = step.role.name;
+    runnerStep.appendChild(heading);
+
+    var who = document.createElement('p');
+    who.className = 'runner-player';
+
+    var name = document.createElement('span');
+    name.className = 'night-player';
+    name.dataset.alignment = step.player.alignment;
+    name.textContent = step.player.name;
+    who.appendChild(name);
+
+    // Camp in words as well as in colour, for the same reason the cards carry
+    // it: the stripe and the name colour are the same hue and nothing else.
+    var camp = document.createElement('span');
+    camp.className = 'player-align-tag';
+    camp.dataset.alignment = step.player.alignment;
+    camp.textContent = ' (' + campName(step.player.alignment) + ')';
+    who.appendChild(camp);
+
+    if (gated || spent) {
+      var chip = document.createElement('span');
+      chip.className = 'night-chip' + (spent ? ' is-spent-chip' : '');
+      chip.textContent = spent ? 'Spent' : 'Needs burn';
+      who.appendChild(chip);
+    }
+
+    // The player's own choice, in words. Undecided shows nothing.
+    if (step.player.action === 'roast' || step.player.action === 'burn') {
       var action = document.createElement('span');
       action.className = 'night-action';
-      if (step.player.action === 'roast') {
-        action.textContent = '☁️';
-        action.title = 'Roasting';
-      } else if (step.player.action === 'burn') {
-        action.textContent = '🔥';
-        action.title = 'Burning';
+      action.textContent = step.player.action === 'roast' ? '☁️ Roast' : '🔥 Burn';
+      who.appendChild(action);
+    }
+
+    runnerStep.appendChild(who);
+
+    var desc = document.createElement('p');
+    desc.className = 'runner-desc';
+    desc.textContent = step.role.description;
+    runnerStep.appendChild(desc);
+
+    var tools = document.createElement('div');
+    tools.className = 'runner-tools';
+
+    // Once-per-game roles keep their spend marker on the step itself
+    if (roleOncePerGame(step.role)) {
+      tools.appendChild(buildOnceToggle(step.player));
+    }
+
+    var open = !!expandedHistory[step.player.id];
+
+    var histBtn = document.createElement('button');
+    histBtn.type = 'button';
+    histBtn.className = 'runner-history-btn';
+    histBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    histBtn.textContent = (open ? '▾' : '▸') + ' History';
+    histBtn.addEventListener('click', function () {
+      if (expandedHistory[step.player.id]) {
+        delete expandedHistory[step.player.id];
       } else {
-        action.textContent = '☁️';
-        action.title = 'Undecided';
-        action.classList.add('is-undecided');
+        expandedHistory[step.player.id] = true;
       }
-
-      var open = !!expandedHistory[step.player.id];
-
-      var caret = document.createElement('span');
-      caret.className = 'night-caret';
-      caret.textContent = open ? '▾' : '▸';
-
-      var row = document.createElement('div');
-      row.className = 'night-row';
-      row.appendChild(caret);
-      row.appendChild(body);
-
-      // Once-per-game roles get a spend marker the moderator can flip
-      if (roleOncePerGame(step.role)) {
-        row.appendChild(buildOnceToggle(step.player));
-      }
-
-      row.appendChild(action);
-      row.addEventListener('click', function () {
-        if (expandedHistory[step.player.id]) {
-          delete expandedHistory[step.player.id];
-        } else {
-          expandedHistory[step.player.id] = true;
-        }
-        renderNightOrder();
-      });
-
-      item.appendChild(row);
-
-      if (open) {
-        item.appendChild(buildHistory(step.player));
-      }
-
-      nightList.appendChild(item);
+      render();
     });
+    tools.appendChild(histBtn);
+
+    runnerStep.appendChild(tools);
+
+    if (open) {
+      runnerStep.appendChild(buildHistory(step.player));
+    }
+
+    // Arriving at the last step used to be a dead end: Next greyed out and
+    // nothing saying what came next. The night still only ends on an explicit
+    // press, but now it is offered where the host actually finishes.
+    runnerEnd.hidden = index !== steps.length - 1;
+    runnerEnd.textContent = '';
+
+    if (index === steps.length - 1) {
+      var waiting = undecidedPlayers();
+
+      var endText = document.createElement('p');
+      endText.className = 'runner-end-text';
+      endText.textContent = waiting.length
+        ? 'Last step. Night ' + (nightsCompleted() + 1) + ' can end once ' +
+          (waiting.length === 1
+            ? waiting[0].name + ' has'
+            : waiting.length + ' players have') + ' chosen roast or burn.'
+        : 'Last step. Ending the night pays out every roast and starts night ' +
+          (nightsCompleted() + 2) + '.';
+      runnerEnd.appendChild(endText);
+
+      var endBtn = document.createElement('button');
+      endBtn.type = 'button';
+      endBtn.className = 'btn';
+      endBtn.textContent = 'End night ' + (nightsCompleted() + 1);
+      endBtn.disabled = waiting.length > 0;
+      endBtn.addEventListener('click', resolveNight);
+      runnerEnd.appendChild(endBtn);
+    }
   }
 
   function roleByName(name) {
@@ -1059,13 +1234,27 @@ document.addEventListener('DOMContentLoaded', function () {
     wrap.className = 'player-action';
 
     [
-      { value: 'roast', glyph: '☁️', label: 'Roast a marshmallow' },
-      { value: 'burn', glyph: '🔥', label: 'Burn a marshmallow' }
+      { value: 'roast', glyph: '☁️', text: 'Roast', label: 'Roast a marshmallow' },
+      { value: 'burn', glyph: '🔥', text: 'Burn', label: 'Burn a marshmallow' }
     ].forEach(function (choice) {
       var btn = document.createElement('button');
       btn.className = 'action-btn action-' + choice.value;
       btn.type = 'button';
-      btn.textContent = choice.glyph;
+
+      // The glyph alone told a host who built this apart from a host who was
+      // taught the game an hour ago. There is no hover on the tablet this runs
+      // on, so the title was unreachable and the word had to be on screen.
+      var mark = document.createElement('span');
+      mark.className = 'action-glyph';
+      mark.setAttribute('aria-hidden', 'true');
+      mark.textContent = choice.glyph;
+      btn.appendChild(mark);
+
+      var word = document.createElement('span');
+      word.className = 'action-text';
+      word.textContent = choice.text;
+      btn.appendChild(word);
+
       btn.title = choice.label;
       btn.setAttribute('aria-label', player.name + ': ' + choice.label);
       btn.setAttribute('aria-pressed', player.action === choice.value);
@@ -1198,14 +1387,15 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Only unassigned players are selectable, and only during setup
+    // Only unassigned players are selectable, and only during setup. Picks
+    // accumulate, so several players can be seated in one press.
     if (player.team === null && phase === 'setup') {
-      if (player.id === selectedId) {
+      if (isSelected(player.id)) {
         card.classList.add('is-selected');
       }
-      card.setAttribute('aria-pressed', player.id === selectedId);
+      card.setAttribute('aria-pressed', isSelected(player.id));
       card.addEventListener('click', function () {
-        selectedId = (selectedId === player.id) ? null : player.id;
+        toggleSelected(player.id);
         render();
       });
     }
@@ -1218,6 +1408,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Settle roster and role state first so the cards below render clean data
     evictInactiveCamps();
+    pruneSelection();
     trimPicks();
     pruneRoleState();
 
@@ -1238,7 +1429,10 @@ document.addEventListener('DOMContentLoaded', function () {
       counts[team].textContent = tally[team];
       campTotals[team].textContent = campMarshmallows(team);
       campTotals[team].hidden = phase !== 'playing';
-      assignButtons[team].disabled = selectedId === null || revealMode;
+      assignButtons[team].disabled = selectedIds.length === 0 || revealMode;
+      // Reads "Assign to Camp Yellow" for a single pick, "Assign 4 to Camp
+      // Yellow" once there's a group to seat
+      assignCounts[team].textContent = selectedIds.length > 1 ? selectedIds.length : '';
     });
 
     empty.hidden = players.length > 0;
@@ -1263,7 +1457,12 @@ document.addEventListener('DOMContentLoaded', function () {
     rotateCcwBtn.disabled = !canRotate();
     rotateCwBtn.title = 'Clockwise — ' + rotationLabel(1);
     rotateCcwBtn.title = 'Counter-clockwise — ' + rotationLabel(-1);
-    gameBarText.textContent = 'Game in progress — ' + decided + ' of ' + seated + ' chosen.';
+    // The reason lives in visible text, not a title: a tooltip on a disabled
+    // button is unreachable on the tablet this runs on.
+    gameBarText.textContent = decided < seated
+      ? 'Game in progress — ' + decided + ' of ' + seated + ' chosen. ' +
+        'Every player needs a roast or burn before the night can end.'
+      : 'Game in progress — all ' + seated + ' chosen. The night can be ended.';
 
     startBtn.disabled = !readyToStart();
     // Explain a disabled Start button rather than leaving it a mystery
@@ -1640,27 +1839,47 @@ document.addEventListener('DOMContentLoaded', function () {
   // can't come back later and seat someone
   var wheelSpinId = 0;
 
-  // Evenly spaced hues, with alternating lightness so neighbouring slices stay
-  // apart even when a big roster packs the hues close together. Light enough
-  // throughout that the dark slice labels stay readable.
+  // The wheel wears the colour of the camp that is about to receive, so the
+  // table can see what is at stake before it moves. A rainbow here put a
+  // yellow wedge and a green wedge on screen while the header read "joins
+  // Camp Yellow", which teaches the room to distrust the one colour code the
+  // rest of the app depends on.
+  // dark is the lightness of the alternating darker slice. It is per camp
+  // because purple runs much darker than yellow or green at the same value,
+  // and the near-black names have to stay high contrast on every slice of
+  // every camp — this is read across a table, not at arm's length.
+  var CAMP_WHEEL_HUE = {
+    left:   { hue: 48,  sat: 82, dark: 56 },
+    middle: { hue: 270, sat: 70, dark: 65 },
+    right:  { hue: 142, sat: 52, dark: 56 }
+  };
+
+  // Slices alternate light and dark within that one camp hue, with a small
+  // drift either side of it so neighbours stay apart on a long roster. Kept
+  // light enough throughout that the near-black names stay high contrast.
   function sliceColor(index, total) {
-    var hue = Math.round((index * 360) / total);
-    var light = index % 2 === 0 ? 66 : 54;
-    return 'hsl(' + hue + ', 68%, ' + light + '%)';
+    var camp = CAMP_WHEEL_HUE[wheelTeam] || CAMP_WHEEL_HUE.left;
+    var drift = (index % 4) * 5 - 7;
+    var light = index % 2 === 0 ? 82 : camp.dark;
+    return 'hsl(' + (camp.hue + drift) + ', ' + camp.sat + '%, ' + light + '%)';
   }
 
-  // Names get smaller as slices get thinner
+  // Names are read across a table from a laptop screen, so these are sized to
+  // be legible at a distance rather than to fit comfortably.
   function wheelLabelSize(total) {
-    if (total > 14) {
-      return '0.85rem';
-    }
-    if (total > 9) {
-      return '1.05rem';
-    }
-    if (total > 5) {
+    if (total > 16) {
       return '1.3rem';
     }
-    return '1.6rem';
+    if (total > 12) {
+      return '1.7rem';
+    }
+    if (total > 8) {
+      return '2.1rem';
+    }
+    if (total > 5) {
+      return '2.6rem';
+    }
+    return '3.2rem';
   }
 
   // Setting textContent detaches the camp span, so put it straight back —
@@ -1714,10 +1933,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // The bars run outwards from the hub along 3 o'clock, so every angle
       // measured from 12 o'clock is a quarter turn behind.
+      var angle = (i + 0.5) * slice - 90;
       var label = document.createElement('div');
       label.className = 'wheel-label';
-      label.textContent = player.name;
-      label.style.transform = 'rotate(' + ((i + 0.5) * slice - 90) + 'deg)';
+      label.style.transform = 'rotate(' + angle + 'deg)';
+
+      // The strip runs hub-to-rim and carries its text at the rim end. Once it
+      // is rotated past the vertical the glyphs come out upside down, so the
+      // text span is turned about its own centre: same place on the slice,
+      // right way up. No name on this wheel is ever read upside down.
+      var text = document.createElement('span');
+      text.className = 'wheel-label-text';
+      text.textContent = player.name;
+      var turn = ((angle % 360) + 360) % 360;
+      if (turn > 90 && turn < 270) {
+        text.classList.add('is-flipped');
+      }
+      label.appendChild(text);
       wheelDisc.appendChild(label);
 
       // Divider on this slice's leading edge. One per slice closes the ring.
@@ -1767,6 +1999,12 @@ document.addEventListener('DOMContentLoaded', function () {
     wheelResult.textContent = player.name + ' → ' + campName(wheelTeam);
     wheelResult.dataset.team = wheelTeam;
     glowSlice(wheelOrder.indexOf(id), wheelOrder.length);
+
+    // The winning name lifts off its slice while the wedge pulses under it
+    var winning = wheelDisc.children[wheelOrder.indexOf(id) * 2 + 1];
+    if (winning && winning.firstChild) {
+      winning.firstChild.classList.add('is-winner');
+    }
 
     // Still "spinning" as far as the SPIN button is concerned — the pause is
     // part of the same turn and must not be cut short by another press.
@@ -1903,6 +2141,8 @@ document.addEventListener('DOMContentLoaded', function () {
         picked: { left: picked.left, middle: picked.middle, right: picked.right },
         teamCount: teamCount,
         infiltratorCount: infiltratorCount,
+        currentStepKey: currentStepKey,
+        currentStepPos: currentStepPos,
         roles: roles,
         rolesCustom: rolesCustom,
         rolesTitle: rolesSource ? rolesSource.textContent : '',
@@ -1995,6 +2235,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       }
       infiltratorCount = typeof snap.infiltratorCount === 'number' ? snap.infiltratorCount : 1;
+      // Absent in saves from before the night runner, so an older game resumes
+      // at the first step rather than at undefined.
+      currentStepKey = typeof snap.currentStepKey === 'string' ? snap.currentStepKey : null;
+      currentStepPos = typeof snap.currentStepPos === 'number' ? snap.currentStepPos : 0;
       if (snap.teamNames) {
         ALL_TEAMS.forEach(function (team) {
           if (teamNames[team] && typeof snap.teamNames[team] === 'string') {
@@ -2019,10 +2263,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     phase = 'setup';
-    selectedId = null;
+    clearSelection();
     swapSelection = [];
     expandedHistory = {};
     infiltratorCount = 1;
+    currentStepKey = null;
+    currentStepPos = 0;
 
     revealMode = false;
     if (revealToggle) {
@@ -2064,7 +2310,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     teamCount = n;
 
-    selectedId = null;
+    clearSelection();
     swapSelection = [];
     closeWheel();
 
@@ -2203,7 +2449,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   ALL_TEAMS.forEach(function (team) {
     assignButtons[team].addEventListener('click', function () {
-      if (selectedId === null) {
+      if (!selectedIds.length) {
         return;
       }
       assignSelected(team);
@@ -2220,7 +2466,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   revealToggle.addEventListener('change', function () {
     revealMode = revealToggle.checked;
-    selectedId = null;
+    clearSelection();
     closeReveal();
     closeWheel();
 
@@ -2244,7 +2490,9 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     phase = 'playing';
-    selectedId = null;
+    clearSelection();
+    currentStepKey = null;
+    currentStepPos = 0;
 
     // Fresh game: nobody has roasted anything yet, and the infiltrators as
     // they stand now are the *original* ones for history purposes.
@@ -2291,9 +2539,46 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  endRoastBtn.addEventListener('click', function () {
-    endRoastingPhase();
-    render();
+  endRoastBtn.addEventListener('click', resolveNight);
+
+  runnerPrev.addEventListener('click', function () {
+    moveStep(-1);
+  });
+
+  runnerNext.addEventListener('click', function () {
+    moveStep(1);
+  });
+
+  // The first keyboard path through a night. Left/right always page; space is
+  // offered too, but only when focus is not on a control that owns the key
+  // itself, so it never fights a button press or types into a reminder field.
+  document.addEventListener('keydown', function (event) {
+    if (phase !== 'playing') {
+      return;
+    }
+    // A modal owns the keyboard while it is open
+    if (!revealModal.hidden || !wheelModal.hidden) {
+      return;
+    }
+
+    var el = document.activeElement;
+    var tag = el ? el.tagName : '';
+    var typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable);
+
+    if (typing) {
+      return;
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      moveStep(1);
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      moveStep(-1);
+    } else if (event.key === ' ' && tag !== 'BUTTON' && tag !== 'A') {
+      event.preventDefault();
+      moveStep(1);
+    }
   });
 
   clearActionsBtn.addEventListener('click', function () {

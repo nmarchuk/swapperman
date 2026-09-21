@@ -5,33 +5,33 @@
     {
       "name": "Brewer",
       "group": 1,
-      "priority": 2,
+      "priority": 4,
       "requires_burn": true,
       "description": "Each night, if you burn your marshmallow, learn one person loyal to your camp."
     },
     {
       "name": "Wood Chopper",
       "group": 1,
-      "priority": 2,
+      "priority": 4,
       "description": "Each night, if players were swapped that day, learn how many are loyal to your camp."
     },
     {
       "name": "Firestarter",
       "group": 1,
-      "priority": 0,
+      "priority": 1,
       "requires_burn": true,
       "description": "Each night, if you burn your marshmallow, choose a player. Their roast will always succeed tonight."
     },
     {
       "name": "Ranger",
       "group": 1,
-      "priority": 2,
+      "priority": 1,
       "description": "If you choose to burn three nights in a row, you may roast five marshmallows the following night."
     },
     {
       "name": "Raccoon",
       "group": 1,
-      "priority": 1,
+      "priority": 2,
       "requires_burn": true,
       "once_per_game": true,
       "description": "Once per game, at night, you may burn your marshmallow and choose two players: these players swap camps."
@@ -39,48 +39,48 @@
     {
       "name": "Sleepwalker",
       "group": 1,
-      "priority": 2,
+      "priority": 5,
       "requires_burn": true,
       "description": "Each night, if you burn your marshmallow, choose a player. If they are swapped during the day tomorrow, they lose 2 marshmallows."
     },
     {
       "name": "Firefly Catcher",
       "group": 2,
-      "priority": 2,
+      "priority": 4,
       "requires_burn": true,
       "description": "Each night, if you burn your marshmallow, choose two players (not yourself), and learn if any burned tonight."
     },
     {
       "name": "Mosquito",
       "group": 2,
-      "priority": 2,
+      "priority": 3,
       "requires_burn": true,
       "description": "If a swap happened the previous day, burn your marshmallow to steal a marshmallow from the other side."
     },
     {
       "name": "Wannabe",
       "group": 2,
-      "priority": 1,
+      "priority": 2,
       "once_per_game": true,
       "description": "Once per game, at night, choose a player. If you have more marshmallows than them, you two are swapped. If not, you lose two marshmallows."
     },
     {
       "name": "Trailblazer",
       "group": 2,
-      "priority": 2,
+      "priority": 4,
       "requires_burn": true,
       "description": "Each night, if you burn a marshmallow, choose a player. You learn their role."
     },
     {
       "name": "Tent Inspector",
       "group": 3,
-      "priority": 2,
+      "priority": 4,
       "description": "Each night, choose a player. Learn how many marshmallows they have."
     },
     {
       "name": "Storyteller",
       "group": 3,
-      "priority": 2,
+      "priority": 6,
       "description": "At the end of the fourth day, if you've never been swapped, everyone loyal to your camp loses one marshmallow."
     },
     {
@@ -94,32 +94,32 @@
     {
       "name": "Stargazer",
       "group": 3,
-      "priority": 2,
+      "priority": 6,
       "description": "On the fourth day, publicly guess a player of the opposite loyalty's marshmallow count. If you are correct, you steal two of their marshmallows."
     },
     {
       "name": "Echo",
       "group": 4,
-      "priority": 1,
+      "priority": 2,
       "requires_burn": true,
       "description": "On the second night, you must burn your marshmallow and choose two players to swap camps."
     },
     {
       "name": "Night Owl",
       "group": 4,
-      "priority": 2,
+      "priority": 1,
       "description": "If you are not in your own camp, you may roast two marshmallows per night."
     },
     {
       "name": "Parking Permit",
       "group": 4,
-      "priority": 2,
+      "priority": 6,
       "description": "Each day, if the camp you are located in doesn't swap, you lose all your marshmallows."
     },
     {
       "name": "Poor Sport",
       "group": 4,
-      "priority": 2,
+      "priority": 0,
       "description": "If you are swapped during the day, everyone burns tonight."
     }
   ]

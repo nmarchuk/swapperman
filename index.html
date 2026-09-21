@@ -57,13 +57,13 @@
 
         <div class="assign-bar">
           <button type="button" class="btn assign-btn assign-left" id="assign-left" disabled>
-            Assign to <span class="assign-label" id="assign-left-label">Camp Yellow</span>
+            Assign <span class="assign-count" id="assign-left-count"></span> to <span class="assign-label" id="assign-left-label">Camp Yellow</span>
           </button>
           <button type="button" class="btn assign-btn assign-middle" id="assign-middle" hidden disabled>
-            Assign to <span class="assign-label" id="assign-middle-label">Camp Purple</span>
+            Assign <span class="assign-count" id="assign-middle-count"></span> to <span class="assign-label" id="assign-middle-label">Camp Purple</span>
           </button>
           <button type="button" class="btn assign-btn assign-right" id="assign-right" disabled>
-            Assign to <span class="assign-label" id="assign-right-label">Camp Green</span>
+            Assign <span class="assign-count" id="assign-right-count"></span> to <span class="assign-label" id="assign-right-label">Camp Green</span>
           </button>
           <button type="button" class="btn btn-secondary" id="wheel-btn" disabled>Wheel</button>
         </div>
@@ -71,32 +71,56 @@
       </section>
 
       <div class="camp-tools" id="camp-tools">
-        <p class="camp-tools-hint" id="infiltrate-hint"></p>
-        <div class="camp-tools-actions">
+        <div class="bar-status">
+          <p class="camp-tools-hint" id="infiltrate-hint"></p>
+          <div class="bar-aside">
+            <!-- Dev only: safe to comment out this button, the script handles its absence -->
+            <button type="button" class="btn btn-dev" id="load-test" disabled>Load 6-player test game</button>
+            <!-- /Dev only -->
+            <button type="button" class="btn btn-danger" id="reset-all">Reset all</button>
+          </div>
+        </div>
+        <div class="bar-actions camp-tools-actions">
           <label class="infiltrator-count">
             Infiltrators each
             <select id="infiltrator-count" disabled></select>
           </label>
-          <button type="button" class="btn" id="assign-infiltrators" disabled>Assign infiltrators</button>
-          <!-- Dev only: safe to comment out this button, the script handles its absence -->
-          <button type="button" class="btn btn-secondary" id="load-test" disabled>Load 6-player test game</button>
-          <!-- /Dev only -->
-          <button type="button" class="btn btn-secondary" id="reset-all">Reset all</button>
-          <button type="button" class="btn btn-start" id="start-game" disabled>Start game</button>
+          <button type="button" class="btn btn-secondary" id="assign-infiltrators" disabled>Assign infiltrators</button>
+          <button type="button" class="btn btn-commit" id="start-game" disabled>Start game</button>
         </div>
       </div>
 
       <div class="game-bar" id="game-bar" hidden>
-        <p class="game-bar-text" id="game-bar-text">Game in progress.</p>
-        <div class="game-bar-actions">
-          <button type="button" class="btn" id="swap-camps" disabled>Swap camps</button>
-          <button type="button" class="btn" id="rotate-cw" hidden disabled>Rotate &#8635;</button>
-          <button type="button" class="btn" id="rotate-ccw" hidden disabled>Rotate &#8634;</button>
-          <button type="button" class="btn" id="end-roasting" disabled>End roasting phase</button>
+        <div class="bar-status">
+          <p class="game-bar-text" id="game-bar-text">Game in progress.</p>
+          <div class="bar-aside">
+            <button type="button" class="btn btn-danger" id="new-game">New game</button>
+          </div>
+        </div>
+        <div class="bar-actions game-bar-actions">
+          <button type="button" class="btn btn-secondary" id="swap-camps" disabled>Swap camps</button>
+          <button type="button" class="btn btn-secondary" id="rotate-cw" hidden disabled>Rotate &#8635;</button>
+          <button type="button" class="btn btn-secondary" id="rotate-ccw" hidden disabled>Rotate &#8634;</button>
           <button type="button" class="btn btn-secondary" id="clear-actions" disabled>Clear choices</button>
-          <button type="button" class="btn btn-secondary" id="new-game">New game</button>
+          <button type="button" class="btn btn-commit" id="end-roasting" disabled>End roasting phase</button>
         </div>
       </div>
+
+      <section id="night-order" class="panel night-runner" hidden>
+        <div class="runner-head">
+          <h2>Night Order</h2>
+          <p class="runner-position" id="runner-position" aria-live="polite"></p>
+        </div>
+
+        <div class="runner-step" id="runner-step"></div>
+
+        <div class="runner-nav">
+          <button type="button" class="btn btn-secondary" id="runner-prev">Previous</button>
+          <button type="button" class="btn" id="runner-next">Next</button>
+        </div>
+
+        <div class="runner-end" id="runner-end" hidden></div>
+      </section>
 
       <div class="teams">
 
@@ -106,8 +130,7 @@
             class="team-name"
             id="team-left-name"
             value="Camp Yellow"
-            aria-label="Left team name"
-            maxlength="20">
+            aria-label="Left team name">
           <div class="team-head">
             <p class="team-count"><span id="left-count">0</span> players</p>
             <span class="team-total" id="left-total" hidden>0</span>
@@ -121,8 +144,7 @@
             class="team-name"
             id="team-middle-name"
             value="Camp Purple"
-            aria-label="Middle team name"
-            maxlength="20">
+            aria-label="Middle team name">
           <div class="team-head">
             <p class="team-count"><span id="middle-count">0</span> players</p>
             <span class="team-total" id="middle-total" hidden>0</span>
@@ -136,8 +158,7 @@
             class="team-name"
             id="team-right-name"
             value="Camp Green"
-            aria-label="Right team name"
-            maxlength="20">
+            aria-label="Right team name">
           <div class="team-head">
             <p class="team-count"><span id="right-count">0</span> players</p>
             <span class="team-total" id="right-total" hidden>0</span>
@@ -162,7 +183,7 @@
 
           <div class="roles-column">
             <h3 class="roles-heading roles-heading-left">
-              <span id="roles-left-name">Camp Yellow</span>
+              <span class="roles-camp-name" id="roles-left-name">Camp Yellow</span>
               <span class="roles-progress" id="roles-left-progress">0 / 0</span>
             </h3>
             <div class="role-list" id="roles-left-list"></div>
@@ -170,7 +191,7 @@
 
           <div class="roles-column" id="roles-middle-column" hidden>
             <h3 class="roles-heading roles-heading-middle">
-              <span id="roles-middle-name">Camp Purple</span>
+              <span class="roles-camp-name" id="roles-middle-name">Camp Purple</span>
               <span class="roles-progress" id="roles-middle-progress">0 / 0</span>
             </h3>
             <div class="role-list" id="roles-middle-list"></div>
@@ -178,7 +199,7 @@
 
           <div class="roles-column">
             <h3 class="roles-heading roles-heading-right">
-              <span id="roles-right-name">Camp Green</span>
+              <span class="roles-camp-name" id="roles-right-name">Camp Green</span>
               <span class="roles-progress" id="roles-right-progress">0 / 0</span>
             </h3>
             <div class="role-list" id="roles-right-list"></div>
@@ -193,11 +214,6 @@
           </div>
 
         </div>
-      </section>
-
-      <section id="night-order" class="panel" hidden>
-        <h2>Night Order</h2>
-        <ol class="night-list" id="night-list"></ol>
       </section>
 
     </main>
